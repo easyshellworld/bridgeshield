@@ -4,6 +4,7 @@ build/
 
 *.db
 *.db-journal
+!backend/prisma/dev.db
 
 .env
 .env.local
