@@ -100,7 +100,7 @@ async function initializeServices() {
 async function startServer() {
   await initializeServices();
   
-  const server = app.listen(PORT, () => {
+  const server = app.listen(Number(PORT), '0.0.0.0', () => {
     logger.info(`Server started on port ${PORT}`);
     logger.info(`API version: ${API_VERSION}`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
