@@ -1,0 +1,80 @@
+[
+  {
+    "address": "0x098b716b8aaf21512996dc57eb0615e2383e2f96",
+    "name": "Ronin Bridge Exploiter (Lazarus Group)",
+    "risk_type": "HACKER",
+    "notes": "Axie Infinity Ronin Bridge exploit, Mar 2022. $625M stolen. Attributed to DPRK Lazarus Group."
+  },
+  {
+    "address": "0x56d8b635a7c88fd1104d23d632af40c1c3aac4e3",
+    "name": "Nomad Bridge — Primary Exploiter",
+    "risk_type": "HACKER",
+    "notes": "Nomad Bridge crowd-looting exploit, Aug 2022. $190M total loss."
+  },
+  {
+    "address": "0xf57113d8f6ff35747737f026fe0b37d4d7f42777",
+    "name": "Nomad Bridge — Exploiter Contract",
+    "risk_type": "HACKER",
+    "notes": "Nomad Bridge exploit contract deployed by attacker."
+  },
+  {
+    "address": "0x629e7da20197a5429d30da36e77d06cdf796b71a",
+    "name": "Wormhole Bridge Exploiter",
+    "risk_type": "HACKER",
+    "notes": "Wormhole Bridge exploit, Feb 2022. $326M stolen. Attacker holds ~94k ETH."
+  },
+  {
+    "address": "0x0d043128146654c7683fbf30ac98d7b2285ded00",
+    "name": "Harmony Horizon Bridge — Primary Exploiter",
+    "risk_type": "HACKER",
+    "notes": "Harmony Horizon Bridge exploit, Jun 2022. $100M stolen. Attributed to Lazarus Group."
+  },
+  {
+    "address": "0x44256bb81181bcaf7b5662614c7ee5f6c30d14e1",
+    "name": "Harmony Horizon Bridge — Secondary Exploiter",
+    "risk_type": "HACKER",
+    "notes": "Secondary address used in Harmony Horizon Bridge exploit."
+  },
+  {
+    "address": "0xe74b28c2eae8679e3ccc3a94d5d0de83ccb84705",
+    "name": "Wintermute Exploiter",
+    "risk_type": "HACKER",
+    "notes": "Wintermute market maker exploit, Sep 2022. $160M stolen via Profanity vanity address vulnerability."
+  },
+  {
+    "address": "0x0248f752802b2cfb4373cc0c3bc3964429385c26",
+    "name": "Wintermute — Attack Contract",
+    "risk_type": "HACKER",
+    "notes": "Contract deployed by Wintermute attacker to execute exploit."
+  },
+  {
+    "address": "0xb2698c2d99ad2c302a95a8db26b08d17a77cedd4",
+    "name": "Euler Finance — Primary Exploiter",
+    "risk_type": "HACKER",
+    "notes": "Euler Finance flash loan attack, Mar 2023. $196M stolen. Majority returned."
+  },
+  {
+    "address": "0x036cec1a199234fc02f72d29e596a09440825f1c",
+    "name": "Euler Finance — Exploit Contract 1",
+    "risk_type": "HACKER",
+    "notes": "First exploit contract used in Euler Finance attack."
+  },
+  {
+    "address": "0xebc29199c817dc47ba12e3f86102564d640cbf99",
+    "name": "Euler Finance — Exploit Contract 2",
+    "risk_type": "HACKER",
+    "notes": "Second exploit contract used in Euler Finance attack."
+  },
+  {
+    "address": "0xf845a7ee8477ad1fb4446651e548901a2635a915",
+    "name": "Harmony — Compromised Validator Multisig 1",
+    "risk_type": "HACKER",
+    "notes": "Compromised validator multisig key used in Harmony Horizon Bridge exploit."
+  },
+  {
+    "address": "0x812d8622c6f3c45959439e7ede3c580da06f8f25",
+    "name": "Harmony — Compromised Validator Multisig 2",
+    "risk_type": "HACKER",
+    "notes": "Compromised validator multisig key used in Harmony Horizon Bridge exploit."
+  }
+]

@@ -1,0 +1,152 @@
+[
+  {
+    "address": "0x1231deb6f5749ef6ce6943a275a1d3e7486f4eae",
+    "name": "LI.FI — Diamond Contract",
+    "category": "LIFI_OFFICIAL",
+    "description": "LI.FI Diamond proxy — main cross-chain aggregation entry point."
+  },
+  {
+    "address": "0xbd6c7b0d2f68c2b7805d88388319cfb6ecb50ea9",
+    "name": "LI.FI — Fee Collector",
+    "category": "LIFI_OFFICIAL",
+    "description": "LI.FI fee collector contract on Ethereum mainnet."
+  },
+  {
+    "address": "0x1f98431c8ad98523631ae4a59f267346ea31f984",
+    "name": "Uniswap V3 — Factory",
+    "category": "KNOWN_PROTOCOL",
+    "description": "Uniswap V3 Factory. Deploys and tracks V3 pools."
+  },
+  {
+    "address": "0x68b3465833fb72a70ecdf485304868c2c50a0288",
+    "name": "Uniswap V3 — SwapRouter02",
+    "category": "KNOWN_PROTOCOL",
+    "description": "Uniswap V3 SwapRouter02 for optimal token swaps."
+  },
+  {
+    "address": "0xc36442b4a4522e871399cd717abdd847ab11fe88",
+    "name": "Uniswap V3 — NonfungiblePositionManager",
+    "category": "KNOWN_PROTOCOL",
+    "description": "Uniswap V3 NFT position manager for LP positions."
+  },
+  {
+    "address": "0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f",
+    "name": "Uniswap V2 — Factory",
+    "category": "KNOWN_PROTOCOL",
+    "description": "Uniswap V2 Factory contract."
+  },
+  {
+    "address": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+    "name": "SushiSwap — Router V2",
+    "category": "KNOWN_PROTOCOL",
+    "description": "SushiSwap V2 swap router on Ethereum mainnet."
+  },
+  {
+    "address": "0xbebc44782c7db0a1a60cb6fe97d0b483032ff1c7",
+    "name": "Curve Finance — 3Pool",
+    "category": "KNOWN_PROTOCOL",
+    "description": "Curve 3Pool (DAI/USDC/USDT) — highest TVL stableswap pool."
+  },
+  {
+    "address": "0x1111111254eeb25177000000000000000000000",
+    "name": "1inch — Router V5 (Aggregation)",
+    "category": "KNOWN_PROTOCOL",
+    "description": "1inch V5 aggregation router for optimal swap routing."
+  },
+  {
+    "address": "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2",
+    "name": "Aave V3 — Pool (Ethereum)",
+    "category": "KNOWN_PROTOCOL",
+    "description": "Aave V3 lending pool on Ethereum mainnet."
+  },
+  {
+    "address": "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9",
+    "name": "Aave V2 — Lending Pool",
+    "category": "KNOWN_PROTOCOL",
+    "description": "Aave V2 lending pool on Ethereum mainnet."
+  },
+  {
+    "address": "0xc3d688b66703497daa19211eedff42f9626965c3",
+    "name": "Compound V3 — cUSDCv3",
+    "category": "KNOWN_PROTOCOL",
+    "description": "Compound V3 USDC market (Comet) on Ethereum mainnet."
+  },
+  {
+    "address": "0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b",
+    "name": "Compound V2 — Comptroller",
+    "category": "KNOWN_PROTOCOL",
+    "description": "Compound V2 Comptroller for risk management."
+  },
+  {
+    "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+    "name": "Lido — stETH",
+    "category": "KNOWN_PROTOCOL",
+    "description": "Lido staked ETH (stETH) token contract."
+  },
+  {
+    "address": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
+    "name": "Lido — wstETH",
+    "category": "KNOWN_PROTOCOL",
+    "description": "Lido wrapped stETH (wstETH) token contract."
+  },
+  {
+    "address": "0xae78736cd615f374d3085123a210448e74fc6393",
+    "name": "Rocket Pool — rETH",
+    "category": "KNOWN_PROTOCOL",
+    "description": "Rocket Pool staked ETH (rETH) token contract."
+  },
+  {
+    "address": "0xbe9895146f7af43049ca1c1ae352b2e1c507e2ba",
+    "name": "Coinbase — cbETH",
+    "category": "KNOWN_PROTOCOL",
+    "description": "Coinbase wrapped staked ETH (cbETH) token contract."
+  },
+  {
+    "address": "0x197e90f9fad81970baea6337d0336808817e45de",
+    "name": "MakerDAO — DSR (Pot)",
+    "category": "KNOWN_PROTOCOL",
+    "description": "MakerDAO Dai Savings Rate (Pot) module."
+  },
+  {
+    "address": "0x5c7bcd6e7de540b66280457d3b76869b53151a9a",
+    "name": "Across Protocol — SpokePool",
+    "category": "BRIDGE_CONTRACT",
+    "description": "Across Protocol SpokePool for fast cross-chain transfers."
+  },
+  {
+    "address": "0x2dccddb493827e15a5dc8f8b72147e6c4a5620857",
+    "name": "Harmony — ETH Bridge (pre-exploit)",
+    "category": "BRIDGE_CONTRACT",
+    "description": "Harmony Horizon ETH Bridge contract. Note: exploited Jun 2022."
+  },
+  {
+    "address": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    "name": "WETH9 — Wrapped Ether",
+    "category": "TOKEN",
+    "description": "Canonical Wrapped Ether (WETH) contract on Ethereum mainnet."
+  },
+  {
+    "address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+    "name": "Tether — USDT",
+    "category": "STABLECOIN",
+    "description": "Tether USD (USDT) ERC-20 token."
+  },
+  {
+    "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    "name": "Circle — USDC",
+    "category": "STABLECOIN",
+    "description": "USD Coin (USDC) ERC-20 token."
+  },
+  {
+    "address": "0x6b175474e89094c44da98b954eedeac495271d0f",
+    "name": "MakerDAO — DAI",
+    "category": "STABLECOIN",
+    "description": "DAI stablecoin ERC-20 token."
+  },
+  {
+    "address": "0x00000000000c2e074ec69a0dfb2997ba6c7d2e1e",
+    "name": "ENS — Registry",
+    "category": "INFRASTRUCTURE",
+    "description": "Ethereum Name Service (ENS) Registry contract."
+  }
+]

@@ -1,0 +1,128 @@
+[
+  {
+    "address": "0x098b716b8aaf21512996dc57eb0615e2383e2f96",
+    "name": "Lazarus Group — Ronin Bridge Exploiter",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "DPRK Lazarus Group. Axie Infinity Ronin Bridge exploit, Mar 2022, $625M. Added to SDN Apr 2022."
+  },
+  {
+    "address": "0xa0e1c89ef1a489c9c7de96311ed5ce5d32c20e4b",
+    "name": "Lazarus Group — Wallet 2",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "DPRK Lazarus Group associated address, designated by OFAC."
+  },
+  {
+    "address": "0x3cffd56b47b7b41c56258d9c7731abadc360e073",
+    "name": "Lazarus Group — Wallet 3",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "DPRK Lazarus Group associated address, designated by OFAC."
+  },
+  {
+    "address": "0x53b6936513e738f44fb50d2b9476730c0ab3bfc1",
+    "name": "Lazarus Group — Wallet 4",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "DPRK Lazarus Group associated address, designated by OFAC."
+  },
+  {
+    "address": "0x35fb6f6db4fb05e6a4ce86f2c93691425626d4b1",
+    "name": "Lazarus Group — Wallet 5",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "DPRK Lazarus Group associated address, designated by OFAC."
+  },
+  {
+    "address": "0xf7b31119c2682c88d88d455dbb9d5932c65cf1be",
+    "name": "Lazarus Group — Wallet 6",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "DPRK Lazarus Group associated address, designated by OFAC."
+  },
+  {
+    "address": "0x3e37627deaa754090fbfbb8bd226c1ce66d255e9",
+    "name": "Lazarus Group — Wallet 7",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "DPRK Lazarus Group associated address, designated by OFAC."
+  },
+  {
+    "address": "0x8589427373d6d84e98730d7795d8f6f8731fda16",
+    "name": "Tornado Cash — Router (Aug 2022 designation)",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "Original Tornado Cash ETH router. Sanctioned Aug 8, 2022."
+  },
+  {
+    "address": "0x722122df12d4e14e13ac3b6895a86e84145b6967",
+    "name": "Tornado Cash — Proxy (Aug 2022 designation)",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "Tornado Cash proxy contract. Sanctioned Aug 8, 2022."
+  },
+  {
+    "address": "0xdd4c48c0b24039969fc16d1cdf626eab821d3384",
+    "name": "Tornado Cash — Governance Vault",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "Tornado Cash governance vault. Sanctioned Aug 8, 2022."
+  },
+  {
+    "address": "0xd4b88df4d29f5cedd6857912842cff3b20c8cfa3",
+    "name": "Tornado Cash — 0.1 ETH Pool",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "Tornado Cash 0.1 ETH deposit pool. Sanctioned Aug 8, 2022."
+  },
+  {
+    "address": "0xfd8610d20aa15b7b2e3be39b396a1bc3516c7144",
+    "name": "Tornado Cash — Anonymity Mining",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "Tornado Cash anonymity mining contract. Sanctioned Aug 8, 2022."
+  },
+  {
+    "address": "0x07687e702b410fa43f4cb4af7fa097918ffd2730",
+    "name": "Tornado Cash — Governance (Nov 2022)",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "Tornado Cash governance. Added Nov 2022 designation."
+  },
+  {
+    "address": "0x22aaa7720ddd5388a3c0a3333430953c68f1849b",
+    "name": "Tornado Cash — Relayer Registry",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "Tornado Cash relayer registry. Sanctioned Nov 2022."
+  },
+  {
+    "address": "0x03893a7c7463ae47d46bc7f091665f1893656003",
+    "name": "Tornado Cash — Staking Rewards",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "Tornado Cash staking rewards. Sanctioned Nov 2022."
+  },
+  {
+    "address": "0xd21be7248e0197ee08e0c20d4a96debdac3d20af",
+    "name": "Tornado Cash — TORN Airdrop Vesting",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "Tornado Cash TORN airdrop vesting. Sanctioned Nov 2022."
+  },
+  {
+    "address": "0xdcbeffbecce100cce9e4b153c4e15cb885643193",
+    "name": "Roman Semenov — Tornado Cash Co-founder",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "Personal address of Tornado Cash co-founder Roman Semenov. Designated by OFAC Aug 2022."
+  },
+  {
+    "address": "0xe950dc316b836e4eefb8308bf32bf7c72a1358ff",
+    "name": "Gaza Now — Sanctioned Entity",
+    "sanctioned_by": "OFAC",
+    "risk_type": "SANCTION",
+    "notes": "Address associated with OFAC-sanctioned entity Gaza Now."
+  }
+]

@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model AddressRisk {
+  id        String   @id @default(cuid())
+  address   String   @unique
+  chainId   Int
+  riskType  String
+  riskScore Int
+  metadata  String?  // Store as JSON string for SQLite
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("address_risks")
+}
+
+model WhitelistEntry {
+  id          String   @id @default(cuid())
+  address     String   @unique
+  chainId     Int
+  category    String
+  description String?
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("whitelist_entries")
+}
+
+model Appeal {
+  id          String   @id @default(cuid())
+  ticketId    String   @unique
+  address     String
+  chainId     Int
+  reason      String
+  contact     String?
+  status      String   @default("PENDING")
+  estimatedReviewAt DateTime?
+  reviewedAt  DateTime?
+  reviewer    String?
+  decision    String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("appeals")
+}
+
+model CheckLog {
+  id          String   @id @default(cuid())
+  checkId     String   @unique
+  address     String
+  chainId     Int
+  riskScore   Int
+  riskLevel   String
+  decision    String
+  isWhitelisted Boolean @default(false)
+  cacheHit    Boolean @default(false)
+  fallbackUsed Boolean @default(false)
+  requestData String?  // Store as JSON string for SQLite
+  responseData String? // Store as JSON string for SQLite
+  createdAt   DateTime @default(now())
+
+  @@map("check_logs")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String
+  entityType  String
+  entityId    String?
+  userId      String?
+  ipAddress   String?
+  userAgent   String?
+  metadata    String?  // Store as JSON string for SQLite
+  createdAt   DateTime @default(now())
+
+  @@map("audit_logs")
+}

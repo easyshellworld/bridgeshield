@@ -1,0 +1,74 @@
+[
+  {
+    "address": "0xd4b88df4d29f5cedd6857912842cff3b20c8cfa3",
+    "name": "Tornado Cash — 0.1 ETH Pool",
+    "risk_type": "MIXER",
+    "notes": "Tornado Cash 0.1 ETH deposit pool on Ethereum mainnet."
+  },
+  {
+    "address": "0x12d66f87a04a9e220743712ce6d9bb1b5616b8fc",
+    "name": "Tornado Cash — 1 ETH Pool",
+    "risk_type": "MIXER",
+    "notes": "Tornado Cash 1 ETH deposit pool on Ethereum mainnet."
+  },
+  {
+    "address": "0x47ce0c6ed5b0ce3d3a51fdb1c52dc66a7c3c2936",
+    "name": "Tornado Cash — 10 ETH Pool",
+    "risk_type": "MIXER",
+    "notes": "Tornado Cash 10 ETH deposit pool on Ethereum mainnet."
+  },
+  {
+    "address": "0x910cbd523d972eb0a6f4cae4618ad62622b39dbf",
+    "name": "Tornado Cash — 100 DAI Pool",
+    "risk_type": "MIXER",
+    "notes": "Tornado Cash 100 DAI deposit pool on Ethereum mainnet."
+  },
+  {
+    "address": "0xa160cdab225685da1d56aa342ad8841c3b53f291",
+    "name": "Tornado Cash — 1000 DAI Pool",
+    "risk_type": "MIXER",
+    "notes": "Tornado Cash 1000 DAI deposit pool on Ethereum mainnet."
+  },
+  {
+    "address": "0xd90e2f925da726b50c4ed8d0fb90ad053324f31b",
+    "name": "Tornado Cash — 10000 DAI Pool",
+    "risk_type": "MIXER",
+    "notes": "Tornado Cash 10000 DAI deposit pool on Ethereum mainnet."
+  },
+  {
+    "address": "0x23773e65ed146a459791799d01336db287f25334",
+    "name": "Tornado Cash — 100000 DAI Pool",
+    "risk_type": "MIXER",
+    "notes": "Tornado Cash 100000 DAI deposit pool on Ethereum mainnet."
+  },
+  {
+    "address": "0xd96f2b1c14db8458374d9aca76e26c3d18364307",
+    "name": "Tornado Cash — 5000 cDAI Pool",
+    "risk_type": "MIXER",
+    "notes": "Tornado Cash 5000 cDAI deposit pool on Ethereum mainnet."
+  },
+  {
+    "address": "0x4736dcf1b7a3d580672cce6e7c65cd5cc9cfba9d",
+    "name": "Tornado Cash — 50000 cDAI Pool",
+    "risk_type": "MIXER",
+    "notes": "Tornado Cash 50000 cDAI deposit pool on Ethereum mainnet."
+  },
+  {
+    "address": "0x169ad27a7a1d3ef92b7faaab8abcf0ced2a387f8",
+    "name": "Tornado Cash — USDC 100 Pool",
+    "risk_type": "MIXER",
+    "notes": "Tornado Cash 100 USDC deposit pool on Ethereum mainnet."
+  },
+  {
+    "address": "0x0836222f2b2b24a3f36f98668ed8f0b38d1a872f",
+    "name": "Tornado Cash — USDT 100 Pool",
+    "risk_type": "MIXER",
+    "notes": "Tornado Cash 100 USDT deposit pool on Ethereum mainnet."
+  },
+  {
+    "address": "0x178169b423a011fff22b9e3f3abea13414ddd0f1",
+    "name": "Tornado Cash — WBTC 0.1 Pool",
+    "risk_type": "MIXER",
+    "notes": "Tornado Cash 0.1 WBTC deposit pool on Ethereum mainnet."
+  }
+]

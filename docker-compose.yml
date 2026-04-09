@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=file:./dev.db
+      - LOG_LEVEL=info
+    volumes:
+      - ./backend/data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend-demo:
+    build: ./frontend-demo
+    ports:
+      - "5173:80"
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  frontend-admin:
+    build: ./frontend-admin
+    ports:
+      - "5174:80"
+    restart: unless-stopped
+    depends_on:
+      - backend

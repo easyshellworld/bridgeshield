@@ -1,0 +1,50 @@
+[
+  {
+    "address": "0x0000000fe6a514a32abdcdfcc076c85243de899b",
+    "name": "Wintermute — Compromised EOA (Profanity)",
+    "risk_type": "SCAM",
+    "notes": "Compromised Wintermute EOA generated via vulnerable Profanity vanity address tool."
+  },
+  {
+    "address": "0x00000000ae347930bd1e7b0f35588b92280f9e75",
+    "name": "Wintermute — Compromised Contract (Profanity)",
+    "risk_type": "SCAM",
+    "notes": "Compromised Wintermute contract address generated via Profanity vulnerability."
+  },
+  {
+    "address": "0x5f259d0b76665c337c6104145894f4d1d2758b8c",
+    "name": "Euler Finance — MEV Front-runner",
+    "risk_type": "SCAM",
+    "notes": "MEV bot that front-ran the Euler Finance exploit to extract a portion of stolen funds."
+  },
+  {
+    "address": "0x3b3ae790df4f312e745d270119c6052904fb6790",
+    "name": "Fake Uniswap Airdrop — Known Phishing",
+    "risk_type": "SCAM",
+    "notes": "Contract deployed to phish users via fake Uniswap UNI airdrop claim pages."
+  },
+  {
+    "address": "0xef1c6e67703c7bd7107eed8303fbe6ec2554bf6b",
+    "name": "Uniswap Universal Router Exploit",
+    "risk_type": "SCAM",
+    "notes": "Address associated with approval phishing attacks targeting Universal Router approvals."
+  },
+  {
+    "address": "0x0000db5c8b030ae20308ac975898e09741e70000",
+    "name": "Address Poisoning — Zero-Value Transfer Scam",
+    "risk_type": "SCAM",
+    "notes": "Known address poisoning scam. Sends zero-value transfers to mimic legitimate addresses."
+  },
+  {
+    "address": "0x94a84433101a10aeda762968f6995c574d1bf154",
+    "name": "Nomad Bridge — Fake Recovery Address",
+    "risk_type": "SCAM",
+    "notes": "Address used in scam claiming to be official Nomad Bridge recovery fund."
+  },
+  {
+    "address": "0xbad000000000000000000000000000000000000f",
+    "name": "Example Malicious — Dev Testing",
+    "risk_type": "SCAM",
+    "notes": "Reserved address for development testing of SCAM detection workflows."
+  }
+]

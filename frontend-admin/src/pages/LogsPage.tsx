@@ -1,0 +1,89 @@
+import { useQuery } from '@tanstack/react-query';
+import { adminApi } from '../api/admin-api';
+
+export default function LogsPage() {
+  const { data: logs = [] } = useQuery({
+    queryKey: ['logs'],
+    queryFn: adminApi.getLogs,
+  });
+
+  const getRiskLevelBadge = (level: string) => {
+    switch (level) {
+      case 'LOW':
+        return <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">LOW</span>;
+      case 'MEDIUM':
+        return <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">MEDIUM</span>;
+      case 'HIGH':
+        return <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">HIGH</span>;
+      default:
+        return null;
+    }
+  };
+
+  const getActionBadge = (action: string) => {
+    switch (action) {
+      case 'ALLOW':
+        return <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">ALLOW</span>;
+      case 'REVIEW':
+        return <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">REVIEW</span>;
+      case 'BLOCK':
+        return <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">BLOCK</span>;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Check Logs</h1>
+        <div className="flex gap-4">
+          <input type="date" className="px-3 py-2 border border-gray-300 rounded-md text-sm" />
+          <select className="px-3 py-2 border border-gray-300 rounded-md text-sm">
+            <option value="ALL">All Risk Levels</option>
+            <option value="LOW">LOW</option>
+            <option value="MEDIUM">MEDIUM</option>
+            <option value="HIGH">HIGH</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+        <table className="w-full min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check ID</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chain</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk Score</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk Level</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Processing Time</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cached</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {logs.map((log) => (
+              <tr key={log.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{log.checkId}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">{log.address.slice(0, 8)}...{log.address.slice(-6)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{log.chainId}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{log.riskScore}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{getRiskLevelBadge(log.riskLevel)}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{getActionBadge(log.action)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{log.processingTimeMs}ms</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {log.cached ? <span className="text-green-600">Yes</span> : 'No'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(log.createdAt).toLocaleString()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

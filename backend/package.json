@@ -1,0 +1,58 @@
+{
+  "name": "bridgeshield-backend",
+  "version": "2.0.0",
+  "description": "AML risk check API for LI.FI cross-chain transactions",
+  "main": "dist/app.js",
+  "scripts": {
+    "dev": "npx prisma db push --accept-data-loss && tsx watch src/app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "db:init": "prisma db push --accept-data-loss && prisma generate",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma db push --force-reset --accept-data-loss && tsx prisma/seed.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "prisma:migrate": "prisma migrate dev",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/**/*.ts"
+  },
+  "keywords": [
+    "aml",
+    "blockchain",
+    "risk",
+    "api",
+    "bridgeshield"
+  ],
+  "author": "BridgeShield Team",
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^5.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "node-cache": "^5.1.2",
+    "opossum": "^8.0.0",
+    "uuid": "^9.0.1",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.5",
+    "@types/node-cache": "^4.2.5",
+    "@types/opossum": "^8.1.9",
+    "@types/supertest": "^7.2.0",
+    "@types/uuid": "^9.0.7",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "prisma": "^5.7.0",
+    "supertest": "^7.2.2",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  }
+}

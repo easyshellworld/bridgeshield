@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=file:./dev.db
+      - LOG_LEVEL=debug
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run dev
+
+  frontend-demo:
+    build: ./frontend-demo
+    ports:
+      - "5173:80"
+    volumes:
+      - ./frontend-demo:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    command: npm run dev
+
+  frontend-admin:
+    build: ./frontend-admin
+    ports:
+      - "5174:80"
+    volumes:
+      - ./frontend-admin:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    command: npm run dev
