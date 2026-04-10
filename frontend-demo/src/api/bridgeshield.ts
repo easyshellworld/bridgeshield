@@ -132,39 +132,60 @@ export const checkAddress = async (address: string, chainId: number = 1): Promis
       signal,
     });
 
+    // 4xx errors: input problem - throw to show real error
+    if (response.status >= 400 && response.status < 500) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Input error: ${response.status}`);
+    }
+
+    // 5xx errors: server problem - fallback to mock
     if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
+      // Fallback to mock data for server errors
+      const mockKey = Object.keys(MOCK_RESULTS).find(k => k.toLowerCase() === address.toLowerCase());
+      if (mockKey) {
+        const mockResult = MOCK_RESULTS[mockKey];
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 50));
+        return { ...mockResult, fallbackReason: 'Server error, using cached data' };
+      }
+      return {
+        address,
+        riskScore: Math.floor(Math.random() * 50) + 10,
+        riskLevel: 'MEDIUM',
+        action: 'REVIEW',
+        riskFactors: ['Server temporarily unavailable', 'Please try again later'],
+        recommendation: 'System degraded - manual review recommended.',
+        cached: false,
+        processingTimeMs: 150,
+        fallback: true,
+        fallbackReason: 'Server error, using fallback data'
+      };
     }
 
     const backendResponse = await response.json();
     return transformCheckResult(backendResponse);
-  } catch (error) {
-    // First, check if we have mock data for this address (case-insensitive)
-    const mockKey = Object.keys(MOCK_RESULTS).find(k => k.toLowerCase() === address.toLowerCase());
-    if (mockKey) {
-      const mockResult = MOCK_RESULTS[mockKey];
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 50));
-      return mockResult;
+  } catch (error: unknown) {
+    if (error instanceof TypeError || error instanceof DOMException || (error as any)?.name === 'AbortError') {
+      const mockKey = Object.keys(MOCK_RESULTS).find(k => k.toLowerCase() === address.toLowerCase());
+      if (mockKey) {
+        const mockResult = MOCK_RESULTS[mockKey];
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 50));
+        return { ...mockResult, fallbackReason: 'Network error, using cached data' };
+      }
+      return {
+        address,
+        riskScore: Math.floor(Math.random() * 50) + 10,
+        riskLevel: 'MEDIUM',
+        action: 'REVIEW',
+        riskFactors: ['Network connection failed', 'Unable to reach AML service'],
+        recommendation: 'System unavailable - manual review required.',
+        cached: false,
+        processingTimeMs: 150,
+        fallback: true,
+        fallbackReason: 'Network error, using fallback data'
+      };
     }
-
-    // Fallback to generic mock result if API fails and no specific mock exists
-    return {
-      address,
-      riskScore: Math.floor(Math.random() * 50) + 10,
-      riskLevel: 'MEDIUM',
-      action: 'REVIEW',
-      riskFactors: [
-        'Unknown address, no AML history available',
-        'No negative flags found, but not whitelisted',
-        'Limited transaction history on chain'
-      ],
-      recommendation: 'Review manually before allowing transaction.',
-      cached: false,
-      processingTimeMs: 150,
-      fallback: true,
-      fallbackReason: 'API unavailable, using fallback data'
-    };
+    // Re-throw 4xx validation errors
+    throw error;
   }
 };
 
@@ -182,7 +203,7 @@ export const getWhitelist = async () => {
   }
 };
 
-export const submitAppeal = async (address: string, reason: string, contact: string) => {
+export const submitAppeal = async (address: string, reason: string, contact: string): Promise<{ success: boolean; error?: string }> => {
   try {
     const signal = createTimeoutSignal(TIMEOUT);
     const response = await fetch(`${BASE_URL}/api/v1/aml/appeal`, {
@@ -191,10 +212,19 @@ export const submitAppeal = async (address: string, reason: string, contact: str
       body: JSON.stringify({ address, chainId: 1, reason, contact }),
       signal,
     });
-    return response.ok;
+
+    if (response.status >= 400 && response.status < 500) {
+      const errorData = await response.json().catch(() => ({}));
+      return { success: false, error: errorData.message || 'Invalid input' };
+    }
+
+    if (!response.ok) {
+      return { success: false, error: 'Server error, please try again later' };
+    }
+
+    return { success: true };
   } catch (error) {
-    // Mock success
-    return true;
+    return { success: false, error: 'Network error, submission failed' };
   }
 };
 

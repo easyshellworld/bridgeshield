@@ -11,10 +11,24 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
       },
       ...options,
     });
-    if (!res.ok) throw new Error('API request failed');
+
+    if (res.status >= 400 && res.status < 500) {
+      const errorData = await res.json().catch(() => ({}));
+      console.error(`[BridgeShield API] Client error (${res.status}):`, errorData.message || endpoint);
+      throw new Error(errorData.message || `Client error: ${res.status}`);
+    }
+
+    if (!res.ok) {
+      console.warn(`[BridgeShield API] Server error (${res.status}), using mock data for ${endpoint}`);
+      return getMockData(endpoint, options.method || 'GET') as T;
+    }
+
     return await res.json();
   } catch (error) {
-    console.warn('API unavailable, using mock data', error);
+    if (error instanceof Error && error.message.startsWith('Client error:')) {
+      throw error;
+    }
+    console.warn(`[BridgeShield API] Network/timeout error, using mock data for ${endpoint}`, error);
     return getMockData(endpoint, options.method || 'GET') as T;
   }
 }
