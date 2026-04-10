@@ -13,7 +13,7 @@ export interface Appeal {
 export interface WhitelistEntry {
   id: string;
   address: string;
-  type: 'LIFI_OFFICIAL' | 'KNOWN_PROTOCOL' | 'BRIDGE_CONTRACT' | 'APPEAL_APPROVED';
+  type: 'LIFI_OFFICIAL' | 'KNOWN_PROTOCOL' | 'BRIDGE_CONTRACT' | 'APPEAL_APPROVED' | 'APPEAL_TEMPORARY';
   label: string;
   chainId?: number;
   expiresAt?: string;

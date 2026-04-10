@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { Router, Request, Response } from 'express';
 import { PrismaService } from '../../db/prisma-client';
 import { CacheService, CacheTier } from '../../services/cache-service';
@@ -13,13 +14,53 @@ router.post('/', appealRateLimiter, appealValidator, async (req: Request, res: R
   try {
     const { address, chainId = 1, reason, contact } = req.body;
     const normalizedAddress = address.toLowerCase();
+    const prisma = prismaService.getClient();
+    const now = new Date();
     
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+
+    const existingPendingAppeal = await prisma.appeal.findFirst({
+      where: {
+        address: normalizedAddress,
+        chainId,
+        status: 'PENDING'
+      }
+    });
+
+    if (existingPendingAppeal) {
+      res.status(409).json({
+        error: 'Conflict',
+        message: 'An appeal for this address is already pending'
+      });
+      return;
+    }
+
+    const existingWhitelistEntry = await prisma.whitelistEntry.findUnique({
+      where: { address: normalizedAddress }
+    });
+
+    if (existingWhitelistEntry) {
+      const isExpiredTemporaryEntry =
+        existingWhitelistEntry.category === 'APPEAL_TEMPORARY' &&
+        existingWhitelistEntry.expiresAt !== null &&
+        existingWhitelistEntry.expiresAt <= now;
+
+      if (isExpiredTemporaryEntry) {
+        await prisma.whitelistEntry.delete({
+          where: { id: existingWhitelistEntry.id }
+        });
+      } else {
+        res.status(409).json({
+          error: 'Conflict',
+          message: 'This address is already whitelisted or under review'
+        });
+        return;
+      }
+    }
     
-    const appealCount = await prismaService.getClient().appeal.count({
+    const appealCount = await prisma.appeal.count({
       where: {
         createdAt: {
           gte: new Date(`${year}-${month}-${day}T00:00:00.000Z`),
@@ -32,26 +73,47 @@ router.post('/', appealRateLimiter, appealValidator, async (req: Request, res: R
     
     const estimatedReviewAt = new Date();
     estimatedReviewAt.setDate(estimatedReviewAt.getDate() + 7);
-    
-    const appeal = await prismaService.createAppeal({
-      ticketId,
-      address: normalizedAddress,
-      chainId,
-      reason: reason.trim(),
-      contact: contact ? contact.trim() : undefined,
-      status: 'PENDING',
-      estimatedReviewAt
-    });
-    
+
     const temporaryExpiry = new Date();
     temporaryExpiry.setDate(temporaryExpiry.getDate() + 1);
-    
-    await prismaService.createWhitelistEntry({
-      address: normalizedAddress,
-      chainId,
-      category: 'APPEAL_TEMPORARY',
-      description: `Temporary whitelist during appeal review - Ticket: ${ticketId}`,
-      expiresAt: temporaryExpiry
+
+    await prisma.$transaction(async (tx) => {
+      await tx.appeal.create({
+        data: {
+          ticketId,
+          address: normalizedAddress,
+          chainId,
+          reason: reason.trim(),
+          contact: contact ? contact.trim() : undefined,
+          status: 'PENDING',
+          estimatedReviewAt
+        }
+      });
+
+      await tx.whitelistEntry.create({
+        data: {
+          address: normalizedAddress,
+          chainId,
+          category: 'APPEAL_TEMPORARY',
+          description: `Temporary whitelist during appeal review - Ticket: ${ticketId}`,
+          expiresAt: temporaryExpiry
+        }
+      });
+
+      await tx.auditLog.create({
+        data: {
+          action: 'APPEAL_CREATED',
+          entityType: 'APPEAL',
+          entityId: ticketId,
+          ipAddress: req.ip,
+          userAgent: req.get('User-Agent'),
+          metadata: JSON.stringify({
+            address: normalizedAddress,
+            chainId,
+            ticketId
+          })
+        }
+      });
     });
     
     cacheService.set(
@@ -64,19 +126,6 @@ router.post('/', appealRateLimiter, appealValidator, async (req: Request, res: R
       },
       CacheTier.WHITELIST
     );
-    
-    await prismaService.createAuditLog({
-      action: 'APPEAL_CREATED',
-      entityType: 'APPEAL',
-      entityId: ticketId,
-      ipAddress: req.ip,
-      userAgent: req.get('User-Agent'),
-      metadata: {
-        address: normalizedAddress,
-        chainId,
-        ticketId
-      }
-    });
     
     logger.info('Appeal created', {
       ticketId,
@@ -104,10 +153,10 @@ router.post('/', appealRateLimiter, appealValidator, async (req: Request, res: R
       body: req.body
     });
     
-    if (error instanceof Error && error.message.includes('Unique constraint')) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       res.status(409).json({
         error: 'Conflict',
-        message: 'An appeal for this address is already pending'
+        message: 'This address is already whitelisted or under review'
       });
       return;
     }

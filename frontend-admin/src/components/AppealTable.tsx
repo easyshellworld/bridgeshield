@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Appeal } from '../types';
 import { adminApi } from '../api/admin-api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -16,12 +16,24 @@ export default function AppealTable({ appeals, filter }: AppealTableProps) {
 
   const approveMutation = useMutation({
     mutationFn: (id: string) => adminApi.approveAppeal(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appeals'] }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['appeals'] }),
+        queryClient.invalidateQueries({ queryKey: ['whitelist'] }),
+        queryClient.invalidateQueries({ queryKey: ['logs'] }),
+      ]);
+    },
   });
 
   const rejectMutation = useMutation({
     mutationFn: (id: string) => adminApi.rejectAppeal(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appeals'] }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['appeals'] }),
+        queryClient.invalidateQueries({ queryKey: ['whitelist'] }),
+        queryClient.invalidateQueries({ queryKey: ['logs'] }),
+      ]);
+    },
   });
 
   const getStatusBadge = (status: string) => {
@@ -51,7 +63,7 @@ export default function AppealTable({ appeals, filter }: AppealTableProps) {
         </thead>
         <tbody className="divide-y divide-gray-200">
           {filteredAppeals.map((appeal) => (
-            <>
+            <Fragment key={appeal.id}>
               <tr key={appeal.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setExpandedId(expandedId === appeal.id ? null : appeal.id)}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{appeal.ticketId}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{appeal.address.slice(0, 6)}...{appeal.address.slice(-4)}</td>
@@ -100,10 +112,24 @@ export default function AppealTable({ appeals, filter }: AppealTableProps) {
                   </td>
                 </tr>
               )}
-            </>
+            </Fragment>
           ))}
+
+          {filteredAppeals.length === 0 && (
+            <tr>
+              <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
+                No appeals match the selected filter.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
+
+      {(approveMutation.error instanceof Error || rejectMutation.error instanceof Error) && (
+        <div className="border-t border-gray-200 px-6 py-3 text-sm text-red-600">
+          {approveMutation.error instanceof Error ? approveMutation.error.message : rejectMutation.error instanceof Error ? rejectMutation.error.message : ''}
+        </div>
+      )}
     </div>
   );
 }

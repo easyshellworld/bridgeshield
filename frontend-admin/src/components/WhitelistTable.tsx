@@ -26,6 +26,7 @@ export default function WhitelistTable({ entries, searchQuery }: WhitelistTableP
       KNOWN_PROTOCOL: 'bg-purple-100 text-purple-800',
       BRIDGE_CONTRACT: 'bg-green-100 text-green-800',
       APPEAL_APPROVED: 'bg-yellow-100 text-yellow-800',
+      APPEAL_TEMPORARY: 'bg-orange-100 text-orange-800',
     };
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[type] || 'bg-gray-100 text-gray-800'}`}>
@@ -72,8 +73,22 @@ export default function WhitelistTable({ entries, searchQuery }: WhitelistTableP
               </td>
             </tr>
           ))}
+
+          {filteredEntries.length === 0 && (
+            <tr>
+              <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
+                No whitelist entries match the current search.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
+
+      {removeMutation.error instanceof Error && (
+        <div className="border-t border-gray-200 px-6 py-3 text-sm text-red-600">
+          {removeMutation.error.message}
+        </div>
+      )}
     </div>
   );
 }

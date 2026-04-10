@@ -2,8 +2,15 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import type { Express } from 'express';
 import { PrismaService } from '../../src/db/prisma-client';
+import { CacheService } from '../../src/services/cache-service';
 
 let app: Express;
+let uniqueCounter = 0;
+
+const createUniqueAddress = () => {
+  uniqueCounter += 1;
+  return `0x${(Date.now() + uniqueCounter).toString(16).padStart(40, '0')}`.slice(0, 42);
+};
 
 beforeAll(async () => {
   const prisma = PrismaService.getInstance();
@@ -118,8 +125,7 @@ describe('GET /api/v1/aml/whitelist', () => {
 
 describe('POST /api/v1/aml/appeal', () => {
     it('creates appeal successfully', async () => {
-      // Use a unique address with timestamp to avoid conflicts
-      const uniqueAddress = `0x${Date.now().toString(16).padStart(40, '0')}`.slice(0, 42);
+      const uniqueAddress = createUniqueAddress();
       const res = await request(app)
         .post('/api/v1/aml/appeal')
         .send({
@@ -134,7 +140,7 @@ describe('POST /api/v1/aml/appeal', () => {
     });
 
     it('returns 400 for missing reason', async () => {
-      const uniqueAddress = `0x${(Date.now() + 1).toString(16).padStart(40, '0')}`.slice(0, 42);
+      const uniqueAddress = createUniqueAddress();
       const res = await request(app)
         .post('/api/v1/aml/appeal')
         .send({
@@ -153,6 +159,75 @@ describe('POST /api/v1/aml/appeal', () => {
         reason: 'test',
       });
     expect(res.status).toBe(400);
+  });
+});
+
+describe('POST /api/v1/admin/appeal/:id/approve', () => {
+  it('approves an appeal without creating a duplicate whitelist entry', async () => {
+    const uniqueAddress = createUniqueAddress();
+
+    const appealResponse = await request(app)
+      .post('/api/v1/aml/appeal')
+      .send({
+        address: uniqueAddress,
+        chainId: 1,
+        reason: 'Please review and approve',
+        contact: 'user@example.com',
+      });
+
+    expect(appealResponse.status).toBe(201);
+
+    const appealsResponse = await request(app).get('/api/v1/admin/appeals');
+    const createdAppeal = appealsResponse.body.find((appeal: any) => appeal.address === uniqueAddress.toLowerCase());
+    expect(createdAppeal).toBeDefined();
+
+    const approveResponse = await request(app)
+      .post(`/api/v1/admin/appeal/${createdAppeal.id}/approve`)
+      .send();
+
+    expect(approveResponse.status).toBe(200);
+    expect(approveResponse.body.success).toBe(true);
+
+    const whitelistResponse = await request(app).get('/api/v1/admin/whitelist');
+    const whitelistEntries = whitelistResponse.body.filter((entry: any) => entry.address === uniqueAddress.toLowerCase());
+    expect(whitelistEntries).toHaveLength(1);
+    expect(whitelistEntries[0].type).toBe('APPEAL_APPROVED');
+    expect(whitelistEntries[0].expiresAt).toBeNull();
+  });
+});
+
+describe('POST /api/v1/admin/appeal/:id/reject', () => {
+  it('rejects an appeal and removes temporary whitelist access from db and cache', async () => {
+    const uniqueAddress = createUniqueAddress();
+    const cacheService = CacheService.getInstance();
+
+    const appealResponse = await request(app)
+      .post('/api/v1/aml/appeal')
+      .send({
+        address: uniqueAddress,
+        chainId: 1,
+        reason: 'Please review and reject',
+        contact: 'user@example.com',
+      });
+
+    expect(appealResponse.status).toBe(201);
+    expect(cacheService.get(uniqueAddress, 1)).not.toBeNull();
+
+    const appealsResponse = await request(app).get('/api/v1/admin/appeals');
+    const createdAppeal = appealsResponse.body.find((appeal: any) => appeal.address === uniqueAddress.toLowerCase());
+    expect(createdAppeal).toBeDefined();
+
+    const rejectResponse = await request(app)
+      .post(`/api/v1/admin/appeal/${createdAppeal.id}/reject`)
+      .send({ notes: 'Rejected during test' });
+
+    expect(rejectResponse.status).toBe(200);
+    expect(rejectResponse.body.success).toBe(true);
+    expect(cacheService.get(uniqueAddress, 1)).toBeNull();
+
+    const whitelistResponse = await request(app).get('/api/v1/admin/whitelist');
+    const whitelistEntries = whitelistResponse.body.filter((entry: any) => entry.address === uniqueAddress.toLowerCase());
+    expect(whitelistEntries).toHaveLength(0);
   });
 });
 

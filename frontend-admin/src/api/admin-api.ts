@@ -13,11 +13,33 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     });
     if (!res.ok) throw new Error('API request failed');
     return await res.json();
-  } catch (e) {
-    console.warn('API unavailable, using mock data', e);
+  } catch (error) {
+    console.warn('API unavailable, using mock data', error);
     return getMockData(endpoint, options.method || 'GET') as T;
   }
 }
+
+const normalizeAppeal = (appeal: any): Appeal => ({
+  id: appeal.id,
+  ticketId: appeal.ticketId,
+  address: appeal.address,
+  reason: appeal.reason,
+  contact: appeal.contact,
+  status: appeal.status,
+  reviewNote: appeal.reviewNote || appeal.notes,
+  reviewedAt: appeal.reviewedAt || undefined,
+  createdAt: appeal.createdAt,
+});
+
+const normalizeWhitelistEntry = (entry: any): WhitelistEntry => ({
+  id: entry.id,
+  address: entry.address,
+  type: entry.type,
+  label: entry.label,
+  chainId: entry.chainId,
+  expiresAt: entry.expiresAt || undefined,
+  createdAt: entry.createdAt,
+});
 
 // Mock data generators
 function getMockData(endpoint: string, method: string): any {
@@ -207,11 +229,21 @@ export const adminApi = {
   getRiskTrend: () => apiFetch<RiskTrendDay[]>('/api/v1/admin/dashboard/risk-trend'),
   getRiskDistribution: () => apiFetch<{ levels: RiskDistributionItem[]; sources: RiskDistributionItem[] }>('/api/v1/admin/dashboard/risk-distribution'),
   
-  getAppeals: () => apiFetch<Appeal[]>('/api/v1/admin/appeals'),
+  getAppeals: async () => {
+    const appeals = await apiFetch<any[]>('/api/v1/admin/appeals');
+    return appeals.map(normalizeAppeal);
+  },
   approveAppeal: (id: string) => apiFetch(`/api/v1/admin/appeal/${id}/approve`, { method: 'POST' }),
-  rejectAppeal: (id: string) => apiFetch(`/api/v1/admin/appeal/${id}/reject`, { method: 'POST' }),
+  rejectAppeal: (id: string, notes?: string) =>
+    apiFetch(`/api/v1/admin/appeal/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify(notes ? { notes } : {}),
+    }),
 
-  getWhitelist: () => apiFetch<WhitelistEntry[]>('/api/v1/admin/whitelist'),
+  getWhitelist: async () => {
+    const entries = await apiFetch<any[]>('/api/v1/admin/whitelist');
+    return entries.map(normalizeWhitelistEntry);
+  },
   addToWhitelist: (entry: Omit<WhitelistEntry, 'id' | 'createdAt'>) => 
     apiFetch('/api/v1/admin/whitelist', { method: 'POST', body: JSON.stringify(entry) }),
   removeFromWhitelist: (id: string) => 

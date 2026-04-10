@@ -1,11 +1,45 @@
 import { Router, Request, Response } from 'express';
 import { PrismaService } from '../../db/prisma-client';
-import { RiskDataLoader } from '../../data/risk-data-loader';
+import { CacheService, CacheTier } from '../../services/cache-service';
 import { logger } from '../middleware/logger';
 
 const router = Router();
 const prismaService = PrismaService.getInstance();
-const riskDataLoader = RiskDataLoader.getInstance();
+const cacheService = CacheService.getInstance();
+
+const parseRiskFactors = (responseData: string | null): string[] => {
+  if (!responseData) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(responseData) as any;
+
+    if (parsed.isWhitelisted) {
+      return ['Whitelisted address'];
+    }
+
+    if (parsed.factors?.details && Array.isArray(parsed.factors.details)) {
+      return parsed.factors.details;
+    }
+
+    if (Array.isArray(parsed.factors)) {
+      return parsed.factors;
+    }
+
+    if (parsed.riskType && typeof parsed.riskType === 'string') {
+      return [parsed.riskType];
+    }
+
+    if (parsed.fallback) {
+      return [parsed.fallbackReason || 'Fallback response'];
+    }
+  } catch (error) {
+    logger.warn('Failed to parse risk factors from check log', { error });
+  }
+
+  return [];
+};
 
 router.get('/dashboard/stats', async (req: Request, res: Response) => {
   try {
@@ -232,7 +266,18 @@ router.get('/appeals', async (req: Request, res: Response) => {
       }
     });
 
-    res.json(appeals);
+    res.json(appeals.map((appeal) => ({
+      id: appeal.id,
+      ticketId: appeal.ticketId,
+      address: appeal.address,
+      chainId: appeal.chainId,
+      reason: appeal.reason,
+      contact: appeal.contact,
+      status: appeal.status,
+      reviewNote: appeal.notes,
+      reviewedAt: appeal.reviewedAt?.toISOString() || null,
+      createdAt: appeal.createdAt.toISOString()
+    })));
 
   } catch (error) {
     logger.error('Failed to get appeals', { error });
@@ -247,27 +292,89 @@ router.post('/appeal/:id/approve', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const now = new Date();
+    const appeal = await prismaService.getClient().$transaction(async (tx) => {
+      const existingAppeal = await tx.appeal.findUnique({
+        where: { id }
+      });
 
-    const appeal = await prismaService.getClient().appeal.update({
-      where: { id },
-      data: {
-        status: 'APPROVED',
-        reviewedAt: now,
-        reviewer: 'admin',
-        decision: 'APPROVED'
+      if (!existingAppeal) {
+        throw new Error('APPEAL_NOT_FOUND');
       }
+
+      if (existingAppeal.status !== 'PENDING') {
+        throw new Error('APPEAL_ALREADY_REVIEWED');
+      }
+
+      const normalizedAddress = existingAppeal.address.toLowerCase();
+      const existingWhitelistEntry = await tx.whitelistEntry.findUnique({
+        where: { address: normalizedAddress }
+      });
+
+      if (!existingWhitelistEntry) {
+        await tx.whitelistEntry.create({
+          data: {
+            address: normalizedAddress,
+            chainId: existingAppeal.chainId,
+            category: 'APPEAL_APPROVED',
+            description: `Permanent whitelist from approved appeal - Ticket: ${existingAppeal.ticketId}`
+          }
+        });
+      } else if (
+        existingWhitelistEntry.category === 'APPEAL_TEMPORARY' ||
+        existingWhitelistEntry.category === 'APPEAL_APPROVED'
+      ) {
+        await tx.whitelistEntry.update({
+          where: { id: existingWhitelistEntry.id },
+          data: {
+            chainId: existingAppeal.chainId,
+            category: 'APPEAL_APPROVED',
+            description: `Permanent whitelist from approved appeal - Ticket: ${existingAppeal.ticketId}`,
+            expiresAt: null
+          }
+        });
+      }
+
+      return tx.appeal.update({
+        where: { id },
+        data: {
+          status: 'APPROVED',
+          reviewedAt: now,
+          reviewer: 'admin',
+          decision: 'APPROVED'
+        }
+      });
     });
 
-    await prismaService.createWhitelistEntry({
-      address: appeal.address.toLowerCase(),
-      chainId: appeal.chainId,
-      category: 'APPEAL_APPROVED',
-      description: `Permanent whitelist from approved appeal - Ticket: ${appeal.ticketId}`
-    });
+    cacheService.set(
+      appeal.address,
+      appeal.chainId,
+      {
+        riskScore: 0,
+        riskLevel: 'LOW',
+        decision: 'ALLOW'
+      },
+      CacheTier.WHITELIST
+    );
 
     res.json({ success: true });
 
   } catch (error) {
+    if (error instanceof Error && error.message === 'APPEAL_NOT_FOUND') {
+      res.status(404).json({
+        error: 'Not found',
+        message: 'Appeal not found'
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message === 'APPEAL_ALREADY_REVIEWED') {
+      res.status(409).json({
+        error: 'Conflict',
+        message: 'Appeal has already been reviewed'
+      });
+      return;
+    }
+
     logger.error('Failed to approve appeal', { error, appealId: req.params.id });
     res.status(500).json({
       error: 'Internal server error',
@@ -282,20 +389,71 @@ router.post('/appeal/:id/reject', async (req: Request, res: Response) => {
     const { notes } = req.body;
     const now = new Date();
 
-    await prismaService.getClient().appeal.update({
-      where: { id },
-      data: {
-        status: 'REJECTED',
-        reviewedAt: now,
-        reviewer: 'admin',
-        decision: 'REJECTED',
-        notes: notes || null
+    const result = await prismaService.getClient().$transaction(async (tx) => {
+      const existingAppeal = await tx.appeal.findUnique({
+        where: { id }
+      });
+
+      if (!existingAppeal) {
+        throw new Error('APPEAL_NOT_FOUND');
       }
+
+      if (existingAppeal.status !== 'PENDING') {
+        throw new Error('APPEAL_ALREADY_REVIEWED');
+      }
+
+      const normalizedAddress = existingAppeal.address.toLowerCase();
+      const existingWhitelistEntry = await tx.whitelistEntry.findUnique({
+        where: { address: normalizedAddress }
+      });
+
+      if (existingWhitelistEntry?.category === 'APPEAL_TEMPORARY') {
+        await tx.whitelistEntry.delete({
+          where: { id: existingWhitelistEntry.id }
+        });
+      }
+
+      await tx.appeal.update({
+        where: { id },
+        data: {
+          status: 'REJECTED',
+          reviewedAt: now,
+          reviewer: 'admin',
+          decision: 'REJECTED',
+          notes: notes || null
+        }
+      });
+
+      return {
+        address: normalizedAddress,
+        chainId: existingAppeal.chainId,
+        removedTemporaryWhitelist: existingWhitelistEntry?.category === 'APPEAL_TEMPORARY'
+      };
     });
+
+    if (result.removedTemporaryWhitelist) {
+      cacheService.clear(result.address, result.chainId);
+    }
 
     res.json({ success: true });
 
   } catch (error) {
+    if (error instanceof Error && error.message === 'APPEAL_NOT_FOUND') {
+      res.status(404).json({
+        error: 'Not found',
+        message: 'Appeal not found'
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message === 'APPEAL_ALREADY_REVIEWED') {
+      res.status(409).json({
+        error: 'Conflict',
+        message: 'Appeal has already been reviewed'
+      });
+      return;
+    }
+
     logger.error('Failed to reject appeal', { error, appealId: req.params.id });
     res.status(500).json({
       error: 'Internal server error',
@@ -400,21 +558,7 @@ router.get('/logs', async (req: Request, res: Response) => {
     });
 
     const formattedLogs = logs.map(log => {
-      let riskFactors: string[] = [];
-
-      try {
-        if (log.responseData) {
-          const responseData = JSON.parse(log.responseData) as any;
-          
-          if (responseData.factors && Array.isArray(responseData.factors)) {
-            riskFactors = responseData.factors;
-          } else if (responseData.riskType && typeof responseData.riskType === 'string') {
-            riskFactors = [responseData.riskType];
-          }
-        }
-      } catch (e) {
-        // Parse errors for malformed JSON are expected for some entries
-      }
+      const riskFactors = parseRiskFactors(log.responseData);
 
       return {
         id: log.id,
