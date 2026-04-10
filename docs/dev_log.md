@@ -2,60 +2,77 @@
 
 ---
 
-## 2026-04-09 — v2.0.0 初始构建
+## 2026-04-10 — v0.0.2 修复申诉流转与后台管理问题
 
 ### 概述
-从零完成 BridgeShield 全栈项目的初始构建，包含后端 API、Demo 前端、Admin 后台管理三个子项目。
+修复申诉审批链路的 500 错误和脏状态问题，补齐后台管理端未完成的交互点。
 
 ### 变更内容
 
-**Backend API (`backend/`)**
-- 搭建 Express + TypeScript + Prisma + SQLite 项目框架
-- 实现 4 个核心 API：`/aml/check`、`/aml/whitelist`、`/aml/appeal`、`/health`
-- 实现风险评分引擎（加权规则：SANCTION +85, HACKER +75, MIXER +70, SCAM +55）
-- 实现内存缓存服务（node-cache，分级 TTL，无 Redis）
-- 实现 Opossum 熔断器（超时 3s，错误率 50% 触发，30s 恢复）
-- 实现本地风险数据预加载（Map/Set, O(1) 查询）
-- 准备 5 个 JSON 数据文件（OFAC、黑客、混币器、诈骗、白名单共 30+ 条记录）
-- 添加 express-rate-limit 限流、helmet 安全头、CORS、winston 结构化日志
-- 修复：check 路由 DB 日志写入改为非阻塞（`.catch()`），避免 DB 故障影响 API 响应
-- 修复：熔断器每请求使用唯一名称，解决闭包复用 bug
+**Backend — Admin 路由 (`src/api/routes/admin.ts`)**
+- 新增 `parseRiskFactors()` 函数：统一解析 `factors.details`、`factors` 数组、`riskType` 等多种响应结构
+- 修复 `GET /admin/appeals` 返回格式：`notes` → `reviewNote`，添加 `reviewedAt`
+- 修复 `POST /admin/appeal/:id/approve`：使用事务防止重复创建白名单，将 `APPEAL_TEMPORARY` 升级为 `APPEAL_APPROVED`
+- 修复 `POST /admin/appeal/:id/reject`：使用事务删除临时白名单，清理缓存
+- 添加 404/409 错误处理（申诉不存在/已审批）
 
-**Frontend Demo (`frontend-demo/`)**
-- 搭建 React 18 + Vite + TypeScript + TailwindCSS v3 项目
-- 实现 CheckerPage（地址风险检查主页）和 ComparePage（LI.FI 对比演示页）
-- 实现 7 个组件：AddressInput、RiskResultCard、RiskScoreMeter（SVG 环形仪表盘）、FactorList、LiveStats、CodeSnippet、ComparePanel
-- 集成 Framer Motion 动画（评分滚动、因子逐条出现、页面切换）
-- 集成 TanStack Query + API Mock 降级（后端不可用时自动使用本地数据）
-- 暗色赛博安全主题（#0A0E1A 背景、#00D4AA 主色、#FF3B3B 危险色）
+**Backend — Appeal 路由 (`src/api/routes/appeal.ts`)**
+- 新增创建申诉前的重复检查：防止重复待处理申诉、清理已过期临时白名单
+- 将"创建申诉 + 创建临时白名单 + 写审计日志"放入同一事务
+- 修复 Prisma 错误处理：使用 `PrismaClientKnownRequestError` 的 `P2002` 码
 
-**Frontend Admin (`frontend-admin/`)**
-- 搭建 React 18 + Vite + TypeScript + TailwindCSS 项目
-- 实现 4 个页面：DashboardPage（仪表盘）、AppealPage（申诉管理）、WhitelistPage（白名单管理）、LogsPage（检查日志）
-- 集成 Recharts 图表（折线图、饼图）
-- 浅色专业管理风格（与 Demo 完全不同）
-- 全部页面配备 Mock 数据降级
+**Frontend Admin — API 客户端 (`src/api/admin-api.ts`)**
+- 新增 `normalizeAppeal()` 和 `normalizeWhitelistEntry()` 归一化函数
+- `getAppeals()`、`getWhitelist()` 返回归一化后的数据
+- `rejectAppeal()` 支持发送 `notes` 参数
 
-**测试 (`backend/tests/`)**
-- 67 个测试用例，全部通过
-- 单元测试：validator (25)、risk-scorer (9)、cache-service (8)、risk-data-loader (9)
-- 集成测试：API 端点 (16)，使用 supertest 对 Express app 进行请求级验证
+**Frontend Admin — AppealTable (`src/components/AppealTable.tsx`)**
+- 修复 React key 警告：使用 `<Fragment key={id}>` 替代空 `<>`
+- 审批/拒绝成功后同时失效 `appeals`、`whitelist`、`logs` 三类查询
+- 添加空状态提示和错误信息展示
 
-**基础设施**
-- docker-compose.yml + docker-compose.dev.yml（无 Redis）
-- 各子项目 Dockerfile
-- README.md
+**Frontend Admin — WhitelistTable (`src/components/WhitelistTable.tsx`)**
+- 新增 `APPEAL_TEMPORARY` 状态的橙色样式
+- 添加空状态提示和错误信息展示
+
+**Frontend Admin — LogsPage (`src/pages/LogsPage.tsx`)**
+- 实现日期和风险等级筛选功能（`useMemo` 优化）
+- 新增"风险因子"列，正确展示 `riskFactors`
+- 添加空状态提示和错误信息展示
+
+**Frontend Admin — WhitelistPage (`src/pages/WhitelistPage.tsx`)**
+- 新增白名单新增表单（地址、类型、Chain ID、标签）
+- 接入 `addToWhitelist` API，新增成功后自动刷新列表
+- 添加错误状态展示
+
+**Frontend Admin — Types (`src/types/index.ts`)**
+- `WhitelistEntry.type` 新增 `APPEAL_TEMPORARY` 类型
+
+**测试 (`backend/tests/integration/api.test.ts`)**
+- 新增 `createUniqueAddress()` 辅助函数避免测试地址冲突
+- 新增 `POST /api/v1/admin/appeal/:id/approve` 测试
+- 新增 `POST /api/v1/admin/appeal/:id/reject` 测试
+
+### 修复的问题
+| 问题 | 状态 |
+|------|------|
+| 申诉批准时 500 错误（唯一约束冲突） | ✅ 已修复 |
+| 申诉状态部分更新（脏状态） | ✅ 已修复 |
+| 申诉拒绝后临时白名单未清理 | ✅ 已修复 |
+| 审批备注字段不匹配（notes vs reviewNote） | ✅ 已修复 |
+| 白名单页 Add Address 按钮无效 | ✅ 已修复 |
+| 日志页筛选功能无效 | ✅ 已修复 |
+| 风险因子信息丢失 | ✅ 已修复 |
 
 ### 构建验证
 | 子项目 | `npm run build` | `npm test` |
 |--------|-----------------|------------|
-| Backend | ✅ 通过 | ✅ 67/67 |
-| Frontend Demo | ✅ 通过 | — |
+| Backend | ✅ 通过 | ✅ 88/88 |
 | Frontend Admin | ✅ 通过 | — |
 
 ---
 
-## 2026-04-09 — v2.0.1 真实数据 + 前后端联动修复
+## 2026-04-09 — v0.0.1 真实数据 + 前后端联动修复
 
 ### 概述
 替换虚假数据为真实 OFAC/黑客地址，修复前后端 API 合约不匹配问题，实现完整联动。
@@ -118,5 +135,58 @@
 | 子项目 | `npm run build` | `npm test` |
 |--------|-----------------|------------|
 | Backend | ✅ 通过 | ✅ 86/86 |
+| Frontend Demo | ✅ 通过 | — |
+| Frontend Admin | ✅ 通过 | — |
+
+---
+
+## 2026-04-09 — v0.0.0 初始构建
+
+### 概述
+从零完成 BridgeShield 全栈项目的初始构建，包含后端 API、Demo 前端、Admin 后台管理三个子项目。
+
+### 变更内容
+
+**Backend API (`backend/`)**
+- 搭建 Express + TypeScript + Prisma + SQLite 项目框架
+- 实现 4 个核心 API：`/aml/check`、`/aml/whitelist`、`/aml/appeal`、`/health`
+- 实现风险评分引擎（加权规则：SANCTION +85, HACKER +75, MIXER +70, SCAM +55）
+- 实现内存缓存服务（node-cache，分级 TTL，无 Redis）
+- 实现 Opossum 熔断器（超时 3s，错误率 50% 触发，30s 恢复）
+- 实现本地风险数据预加载（Map/Set, O(1) 查询）
+- 准备 5 个 JSON 数据文件（OFAC、黑客、混币器、诈骗、白名单共 30+ 条记录）
+- 添加 express-rate-limit 限流、helmet 安全头、CORS、winston 结构化日志
+- 修复：check 路由 DB 日志写入改为非阻塞（`.catch()`），避免 DB 故障影响 API 响应
+- 修复：熔断器每请求使用唯一名称，解决闭包复用 bug
+
+**Frontend Demo (`frontend-demo/`)**
+- 搭建 React 18 + Vite + TypeScript + TailwindCSS v3 项目
+- 实现 CheckerPage（地址风险检查主页）和 ComparePage（LI.FI 对比演示页）
+- 实现 7 个组件：AddressInput、RiskResultCard、RiskScoreMeter（SVG 环形仪表盘）、FactorList、LiveStats、CodeSnippet、ComparePanel
+- 集成 Framer Motion 动画（评分滚动、因子逐条出现、页面切换）
+- 集成 TanStack Query + API Mock 降级（后端不可用时自动使用本地数据）
+- 暗色赛博安全主题（#0A0E1A 背景、#00D4AA 主色、#FF3B3B 危险色）
+
+**Frontend Admin (`frontend-admin/`)**
+- 搭建 React 18 + Vite + TypeScript + TailwindCSS 项目
+- 实现 4 个页面：DashboardPage（仪表盘）、AppealPage（申诉管理）、WhitelistPage（白名单管理）、LogsPage（检查日志）
+- 集成 Recharts 图表（折线图、饼图）
+- 浅色专业管理风格（与 Demo 完全不同）
+- 全部页面配备 Mock 数据降级
+
+**测试 (`backend/tests/`)**
+- 67 个测试用例，全部通过
+- 单元测试：validator (25)、risk-scorer (9)、cache-service (8)、risk-data-loader (9)
+- 集成测试：API 端点 (16)，使用 supertest 对 Express app 进行请求级验证
+
+**基础设施**
+- docker-compose.yml + docker-compose.dev.yml（无 Redis）
+- 各子项目 Dockerfile
+- README.md
+
+### 构建验证
+| 子项目 | `npm run build` | `npm test` |
+|--------|-----------------|------------|
+| Backend | ✅ 通过 | ✅ 67/67 |
 | Frontend Demo | ✅ 通过 | — |
 | Frontend Admin | ✅ 通过 | — |

@@ -236,7 +236,7 @@ describe('GET / (root)', () => {
     const res = await request(app).get('/');
     expect(res.status).toBe(200);
     expect(res.body.name).toBe('BridgeShield Backend API');
-    expect(res.body.version).toBe('2.0.0');
+    expect(res.body.version).toBe('0.0.0');
   });
 });
 

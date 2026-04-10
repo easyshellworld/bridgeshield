@@ -20,7 +20,7 @@ router.get('/', async (req: Request, res: Response) => {
       total: stats.totalWhitelistAddresses,
       categories,
       lastSyncedAt: new Date().toISOString(),
-      version: '2.0.0'
+      version: '0.0.0'
     };
     
     logger.debug('Whitelist summary retrieved', {

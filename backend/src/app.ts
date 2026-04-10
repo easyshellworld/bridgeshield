@@ -42,7 +42,7 @@ app.use(`/api/${API_VERSION}/admin`, adminRouter);
 app.get('/', (req, res) => {
   res.json({
     name: 'BridgeShield Backend API',
-    version: '2.0.0',
+    version: '0.0.0',
     description: 'AML risk check API for LI.FI cross-chain transactions',
     endpoints: {
       health: `/api/${API_VERSION}/health`,

@@ -1,6 +1,6 @@
 {
   "name": "bridgeshield-backend",
-  "version": "2.0.0",
+  "version": "0.0.0",
   "description": "AML risk check API for LI.FI cross-chain transactions",
   "main": "dist/app.js",
   "scripts": {
