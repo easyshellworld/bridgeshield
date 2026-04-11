@@ -1,5 +1,6 @@
 import { PrismaService } from '../db/prisma-client';
 import { logger } from '../api/middleware/logger';
+import { ValidationError, validateAddress } from '../api/middleware/validator';
 
 export interface BehaviorAnalysisInput {
   address: string;
@@ -81,6 +82,13 @@ export class BehaviorAnalyzerService {
   }
 
   public async analyzeAddressBehavior(input: BehaviorAnalysisInput): Promise<BehaviorProfile> {
+    if (!input.address || typeof input.address !== 'string') {
+      throw new ValidationError([{ field: 'address', message: 'Invalid address: must be a non-empty string' }]);
+    }
+    if (!validateAddress(input.address)) {
+      throw new ValidationError([{ field: 'address', message: 'Invalid EVM address format' }]);
+    }
+
     const normalizedAddress = input.address.toLowerCase();
     const now = new Date();
     const since7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);

@@ -69,59 +69,69 @@ export class RiskDataLoader {
   }
   
   private async loadRiskData(): Promise<void> {
-    const dataDir = path.join(process.cwd(), 'data');
-    
-    const ofacData = await this.loadJsonFile<RiskDataItem[]>(
-      path.join(dataDir, 'ofac-crypto-addresses.json')
-    );
-    ofacData.forEach(item => {
-      const normalizedAddress = item.address.toLowerCase();
-      this.riskData.set(normalizedAddress, { ...item, risk_type: 'SANCTION' });
-      this.riskCounts.SANCTION++;
-    });
-    
-    const hackerData = await this.loadJsonFile<RiskDataItem[]>(
-      path.join(dataDir, 'hacker-addresses.json')
-    );
-    hackerData.forEach(item => {
-      const normalizedAddress = item.address.toLowerCase();
-      this.riskData.set(normalizedAddress, { ...item, risk_type: 'HACKER' });
-      this.riskCounts.HACKER++;
-    });
-    
-    const mixerData = await this.loadJsonFile<RiskDataItem[]>(
-      path.join(dataDir, 'mixer-addresses.json')
-    );
-    mixerData.forEach(item => {
-      const normalizedAddress = item.address.toLowerCase();
-      this.riskData.set(normalizedAddress, { ...item, risk_type: 'MIXER' });
-      this.riskCounts.MIXER++;
-    });
-    
-    const scamData = await this.loadJsonFile<RiskDataItem[]>(
-      path.join(dataDir, 'scam-addresses.json')
-    );
-    scamData.forEach(item => {
-      const normalizedAddress = item.address.toLowerCase();
-      this.riskData.set(normalizedAddress, { ...item, risk_type: 'SCAM' });
-      this.riskCounts.SCAM++;
-    });
+    try {
+      const dataDir = path.join(process.cwd(), 'data');
+      
+      const ofacData = await this.loadJsonFile<RiskDataItem[]>(
+        path.join(dataDir, 'ofac-crypto-addresses.json')
+      );
+      ofacData.forEach(item => {
+        const normalizedAddress = item.address.toLowerCase();
+        this.riskData.set(normalizedAddress, { ...item, risk_type: 'SANCTION' });
+        this.riskCounts.SANCTION++;
+      });
+      
+      const hackerData = await this.loadJsonFile<RiskDataItem[]>(
+        path.join(dataDir, 'hacker-addresses.json')
+      );
+      hackerData.forEach(item => {
+        const normalizedAddress = item.address.toLowerCase();
+        this.riskData.set(normalizedAddress, { ...item, risk_type: 'HACKER' });
+        this.riskCounts.HACKER++;
+      });
+      
+      const mixerData = await this.loadJsonFile<RiskDataItem[]>(
+        path.join(dataDir, 'mixer-addresses.json')
+      );
+      mixerData.forEach(item => {
+        const normalizedAddress = item.address.toLowerCase();
+        this.riskData.set(normalizedAddress, { ...item, risk_type: 'MIXER' });
+        this.riskCounts.MIXER++;
+      });
+      
+      const scamData = await this.loadJsonFile<RiskDataItem[]>(
+        path.join(dataDir, 'scam-addresses.json')
+      );
+      scamData.forEach(item => {
+        const normalizedAddress = item.address.toLowerCase();
+        this.riskData.set(normalizedAddress, { ...item, risk_type: 'SCAM' });
+        this.riskCounts.SCAM++;
+      });
+    } catch (error) {
+      logger.error('Failed to load risk data files', { error });
+      throw error;
+    }
   }
   
   private async loadWhitelist(): Promise<void> {
-    const dataDir = path.join(process.cwd(), 'data');
-    
-    const whitelistData = await this.loadJsonFile<WhitelistItem[]>(
-      path.join(dataDir, 'whitelist.json')
-    );
-    
-    whitelistData.forEach(item => {
-      const normalizedAddress = item.address.toLowerCase();
-      this.whitelistData.set(normalizedAddress, item);
+    try {
+      const dataDir = path.join(process.cwd(), 'data');
       
-      const category = item.category;
-      this.whitelistCounts[category] = (this.whitelistCounts[category] || 0) + 1;
-    });
+      const whitelistData = await this.loadJsonFile<WhitelistItem[]>(
+        path.join(dataDir, 'whitelist.json')
+      );
+      
+      whitelistData.forEach(item => {
+        const normalizedAddress = item.address.toLowerCase();
+        this.whitelistData.set(normalizedAddress, item);
+        
+        const category = item.category;
+        this.whitelistCounts[category] = (this.whitelistCounts[category] || 0) + 1;
+      });
+    } catch (error) {
+      logger.error('Failed to load whitelist data', { error });
+      throw error;
+    }
   }
   
   private async loadJsonFile<T>(filePath: string): Promise<T> {

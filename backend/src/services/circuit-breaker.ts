@@ -13,7 +13,7 @@ export interface CircuitBreakerOptions {
 
 export interface CircuitBreakerResult {
   success: boolean;
-  data?: any;
+  data?: unknown;
   error?: string;
   fallback?: boolean;
   latency?: number;
@@ -45,9 +45,9 @@ export class CircuitBreakerService {
   }
   
   public createBreaker<T>(
-    action: (...args: any[]) => Promise<T>,
+    action: (...args: unknown[]) => Promise<T>,
     options: CircuitBreakerOptions = {},
-    fallback?: (...args: any[]) => Promise<any>
+    fallback?: (...args: unknown[]) => Promise<unknown>
   ): CircuitBreaker {
     const breakerOptions = { ...this.defaultOptions, ...options };
     const breakerName = breakerOptions.name || 'unnamed';
@@ -89,11 +89,11 @@ export class CircuitBreakerService {
       logger.warn('Circuit breaker timeout', { name, error: error.message });
     });
     
-    breaker.on('success', (result: any) => {
+    breaker.on('success', (_result: unknown) => {
       logger.debug('Circuit breaker success', { name });
     });
     
-    breaker.on('fallback', (result: any) => {
+    breaker.on('fallback', (_result: unknown) => {
       logger.warn('Circuit breaker fallback used', { name });
     });
   }
@@ -102,21 +102,21 @@ export class CircuitBreakerService {
     return {
       success: true,
       data: {
-        riskScore: 0,
-        riskLevel: 'LOW' as const,
-        decision: 'ALLOW' as const,
+        riskScore: 50,
+        riskLevel: 'MEDIUM' as const,
+        decision: 'REVIEW' as const,
         fallback: true,
-        message: 'Circuit breaker fallback - allowing transaction'
+        message: 'Circuit breaker fallback - please review transaction'
       },
       fallback: true
     };
   }
   
   public async execute<T>(
-    action: (...args: any[]) => Promise<T>,
-    args: any[] = [],
+    action: (...args: unknown[]) => Promise<T>,
+    args: unknown[] = [],
     options: CircuitBreakerOptions = {},
-    fallback?: (...args: any[]) => Promise<any>
+    fallback?: (...args: unknown[]) => Promise<unknown>
   ): Promise<CircuitBreakerResult> {
     const startTime = Date.now();
     const breakerName = options.name || 'anonymous';
@@ -164,7 +164,7 @@ export class CircuitBreakerService {
       return breaker ? breaker.stats : null;
     }
     
-    const stats: Record<string, any> = {};
+    const stats: Record<string, unknown> = {};
     this.breakers.forEach((breaker, breakerName) => {
       stats[breakerName] = breaker.stats;
     });
@@ -184,7 +184,7 @@ export class CircuitBreakerService {
       } : null;
     }
     
-    const statuses: Record<string, any> = {};
+    const statuses: Record<string, unknown> = {};
     this.breakers.forEach((breaker, breakerName) => {
       statuses[breakerName] = {
         closed: breaker.closed,

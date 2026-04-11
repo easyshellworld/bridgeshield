@@ -56,15 +56,21 @@ export class CacheService {
   
   public get(address: string, chainId: number): CacheResult | null {
     const cacheKey = this.getCacheKey(address, chainId);
-    const cached = this.cache.get<CacheResult>(cacheKey);
-    
-    if (cached) {
-      logger.debug('Cache hit', { address, chainId, cacheKey });
-      return cached;
+    try {
+      const cached = this.cache.get<CacheResult>(cacheKey);
+      
+      if (cached) {
+        logger.debug('Cache hit', { address, chainId, cacheKey });
+        return cached;
+      }
+      
+      logger.debug('Cache miss', { address, chainId, cacheKey });
+      return null;
+    } catch (error) {
+      logger.error('Cache get error', { address, chainId, cacheKey, error });
+      // Distinguish cache error from normal cache miss by throwing
+      throw error instanceof Error ? error : new Error(String(error));
     }
-    
-    logger.debug('Cache miss', { address, chainId, cacheKey });
-    return null;
   }
   
   public set(

@@ -1,5 +1,6 @@
 import { RiskDataLoader, RiskType } from '../data/risk-data-loader';
 import { logger } from '../api/middleware/logger';
+import { ValidationError, validateAddress } from '../api/middleware/validator';
 
 export interface RiskScoreInput {
   address: string;
@@ -54,7 +55,15 @@ export class RiskScorer {
   }
   
   public calculateRiskScore(input: RiskScoreInput): RiskScoreResult {
-    const { address, chainId, amount, senderAddress, hasMixerInteraction, isHighRiskSender } = input;
+    // 验证 address 存在且格式正确 (EVM address)
+    if (!input.address || typeof input.address !== 'string') {
+      throw new ValidationError([{ field: 'address', message: 'Invalid address: must be a non-empty string' }]);
+    }
+    if (!validateAddress(input.address)) {
+      throw new ValidationError([{ field: 'address', message: 'Invalid EVM address format' }]);
+    }
+
+    const { address, chainId, amount, hasMixerInteraction, isHighRiskSender } = input;
     
     let baseRisk = 0;
     let riskType: RiskType | undefined;
