@@ -15,6 +15,9 @@ import checkRouter from './api/routes/check';
 import whitelistRouter from './api/routes/whitelist';
 import appealRouter from './api/routes/appeal';
 import adminRouter from './api/routes/admin';
+import earnRouter from './api/routes/earn';
+import composerRouter from './api/routes/composer';
+import behaviorRouter from './api/routes/behavior';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,6 +41,9 @@ app.use(`/api/${API_VERSION}/aml/check`, checkRouter);
 app.use(`/api/${API_VERSION}/aml/whitelist`, whitelistRouter);
 app.use(`/api/${API_VERSION}/aml/appeal`, appealRouter);
 app.use(`/api/${API_VERSION}/admin`, adminRouter);
+app.use(`/api/${API_VERSION}/earn`, earnRouter);
+app.use(`/api/${API_VERSION}/composer`, composerRouter);
+app.use(`/api/${API_VERSION}/behavior`, behaviorRouter);
 
 app.get('/', (req, res) => {
   res.json({
@@ -48,7 +54,12 @@ app.get('/', (req, res) => {
       health: `/api/${API_VERSION}/health`,
       check: `/api/${API_VERSION}/aml/check`,
       whitelist: `/api/${API_VERSION}/aml/whitelist`,
-      appeal: `/api/${API_VERSION}/aml/appeal`
+      appeal: `/api/${API_VERSION}/aml/appeal`,
+      earnVaults: `/api/${API_VERSION}/earn/vaults`,
+      earnVaultDetail: `/api/${API_VERSION}/earn/vault/:network/:address`,
+      earnPortfolio: `/api/${API_VERSION}/earn/portfolio/:wallet`,
+      composerQuote: `/api/${API_VERSION}/composer/quote`,
+      behaviorProfile: `/api/${API_VERSION}/behavior/profile/:wallet`
     },
     documentation: 'https://docs.bridgeshield.io'
   });

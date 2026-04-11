@@ -60,6 +60,7 @@ BridgeShield is an Anti-Money Laundering (AML) compliance gateway designed speci
 
 3. **Access the applications:**
    - **Frontend Demo:** http://localhost:5173
+   - **Earn Integration Flow Demo:** http://localhost:5173/earn-flow
    - **Backend API:** http://localhost:3000
    - **Frontend Admin:** http://localhost:5174
    - **API Documentation:** http://localhost:3000/api/v1/docs
@@ -151,6 +152,7 @@ bridgeshield/
    cp .env.example .env
    # Edit .env with your configuration
    ```
+   - Set `COMPOSER_API_KEY` (from LI.FI Partner Portal) to enable `/api/v1/composer/quote`.
 
 4. **Initialize database:**
    ```bash
@@ -246,6 +248,16 @@ bridgeshield/
 | DELETE | `/api/v1/admin/whitelist/:id` | Remove from whitelist |
 | GET | `/api/v1/admin/logs` | View check logs |
 
+### Earn + Composer Integration API (Port 3000)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/earn/vaults` | Proxy vault discovery from Earn Data API |
+| GET | `/api/v1/earn/vault/:network/:address` | Proxy single vault detail |
+| GET | `/api/v1/earn/portfolio/:wallet` | Proxy wallet portfolio positions |
+| GET | `/api/v1/composer/quote` | AML-gated Composer quote (`BLOCK`/`REVIEW`/`ALLOW`) |
+| GET | `/api/v1/behavior/profile/:wallet` | C-end wallet behavior profile and anomaly signals |
+
 ## 🛡️ Features
 
 ### Risk Assessment
@@ -253,6 +265,7 @@ bridgeshield/
 - **Real-time Scoring:** Risk score 0-100 with HIGH/MEDIUM/LOW classification
 - **Risk Factors:** Detailed breakdown of risk indicators
 - **Caching:** Multi-tier in-memory caching with TTL
+- **Behavior Analytics:** C-end behavior anomaly detection (velocity, chain novelty, amount spikes, decision drift)
 
 ### Compliance Tools
 - **Appeal System:** Users can contest flagged addresses
@@ -323,6 +336,10 @@ docker-compose logs -f backend
 ### Environment Variables
 - `DATABASE_URL`: SQLite/PostgreSQL connection string
 - `LOG_LEVEL`: Logging level (debug, info, warn, error)
+- `EARN_DATA_API_BASE_URL`: Earn Data API base URL (default: `https://earn.li.fi`)
+- `COMPOSER_API_BASE_URL`: Composer API base URL (default: `https://li.quest`)
+- `COMPOSER_API_KEY`: LI.FI Partner Portal API key (required for Composer quote route)
+- `BEHAVIOR_*`: Thresholds for C-end behavior risk model (velocity, amount spikes, decision drift)
 
 ### Security Features
 - Rate limiting on public endpoints

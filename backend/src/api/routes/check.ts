@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { RiskDataLoader } from '../../data/risk-data-loader';
 import { CacheService, CacheTier } from '../../services/cache-service';
 import { RiskScorer, RiskScoreInput } from '../../services/risk-scorer';
+import { BehaviorAnalyzerService } from '../../services/behavior-analyzer';
 import { CircuitBreakerService } from '../../services/circuit-breaker';
 import { PrismaService } from '../../db/prisma-client';
 import { logger } from '../middleware/logger';
@@ -13,6 +14,7 @@ const router = Router();
 const riskDataLoader = RiskDataLoader.getInstance();
 const cacheService = CacheService.getInstance();
 const riskScorer = new RiskScorer();
+const behaviorAnalyzer = new BehaviorAnalyzerService();
 const circuitBreakerService = CircuitBreakerService.getInstance();
 const prismaService = PrismaService.getInstance();
 
@@ -27,32 +29,50 @@ router.post('/', checkRateLimiter, riskCheckValidator, async (req: Request, res:
     let cacheHit = false;
     let fallbackUsed = false;
     let isWhitelisted = false;
+    const behaviorProfile = await behaviorAnalyzer.analyzeAddressBehavior({
+      address: normalizedAddress,
+      chainId,
+      amount
+    });
     
     const cachedResult = cacheService.get(normalizedAddress, chainId);
     
     if (cachedResult) {
       cacheHit = true;
+      const adjustedResult = behaviorAnalyzer.applyBehaviorAdjustment({
+        riskScore: cachedResult.riskScore,
+        riskLevel: cachedResult.riskLevel,
+        decision: cachedResult.decision
+      }, behaviorProfile);
       
       prismaService.createCheckLog({
         checkId,
         address: normalizedAddress,
         chainId,
-        riskScore: cachedResult.riskScore,
-        riskLevel: cachedResult.riskLevel,
-        decision: cachedResult.decision,
+        riskScore: adjustedResult.riskScore,
+        riskLevel: adjustedResult.riskLevel,
+        decision: adjustedResult.decision,
         isWhitelisted,
         cacheHit: true,
         fallbackUsed: false,
         requestData: req.body,
-        responseData: cachedResult
+        responseData: {
+          ...cachedResult,
+          behavior: behaviorProfile,
+          behaviorEscalated: adjustedResult.behaviorEscalated,
+          behaviorReason: adjustedResult.behaviorReason,
+          baseDecision: cachedResult.decision
+        }
       }).catch(err => logger.error('Failed to log cached check', { err }));
       
       logger.info('Risk check completed (cached)', {
         checkId,
         address: normalizedAddress,
         chainId,
-        riskScore: cachedResult.riskScore,
-        decision: cachedResult.decision,
+        riskScore: adjustedResult.riskScore,
+        decision: adjustedResult.decision,
+        behaviorLevel: behaviorProfile.level,
+        behaviorEscalated: adjustedResult.behaviorEscalated,
         cacheTier: cachedResult.cacheTier
       });
       
@@ -60,15 +80,19 @@ router.post('/', checkRateLimiter, riskCheckValidator, async (req: Request, res:
         checkId,
         address: normalizedAddress,
         chainId,
-        riskScore: cachedResult.riskScore,
-        riskLevel: cachedResult.riskLevel,
-        decision: cachedResult.decision,
+        riskScore: adjustedResult.riskScore,
+        riskLevel: adjustedResult.riskLevel,
+        decision: adjustedResult.decision,
+        baseDecision: cachedResult.decision,
         riskType: cachedResult.riskType,
         isWhitelisted,
         cacheHit: true,
         cacheTier: cachedResult.cacheTier,
         cachedAt: cachedResult.cachedAt,
-        expiresAt: cachedResult.expiresAt
+        expiresAt: cachedResult.expiresAt,
+        behavior: behaviorProfile,
+        behaviorEscalated: adjustedResult.behaviorEscalated,
+        behaviorReason: adjustedResult.behaviorReason
       });
       return;
     }
@@ -76,12 +100,20 @@ router.post('/', checkRateLimiter, riskCheckValidator, async (req: Request, res:
     isWhitelisted = riskDataLoader.isWhitelisted(normalizedAddress);
     
     if (isWhitelisted) {
-      const whitelistResult = {
+      const adjustedResult = behaviorAnalyzer.applyBehaviorAdjustment({
         riskScore: 0,
-        riskLevel: 'LOW' as const,
-        decision: 'ALLOW' as const,
+        riskLevel: 'LOW',
+        decision: 'ALLOW'
+      }, behaviorProfile);
+      const whitelistResult = {
+        riskScore: adjustedResult.riskScore,
+        riskLevel: adjustedResult.riskLevel as 'LOW' | 'MEDIUM' | 'HIGH',
+        decision: adjustedResult.decision as 'ALLOW' | 'REVIEW' | 'BLOCK',
         riskType: undefined,
-        isWhitelisted: true
+        isWhitelisted: true,
+        behavior: behaviorProfile,
+        behaviorEscalated: adjustedResult.behaviorEscalated,
+        behaviorReason: adjustedResult.behaviorReason
       };
       
       cacheService.set(
@@ -99,9 +131,9 @@ router.post('/', checkRateLimiter, riskCheckValidator, async (req: Request, res:
         checkId,
         address: normalizedAddress,
         chainId,
-        riskScore: 0,
-        riskLevel: 'LOW',
-        decision: 'ALLOW',
+        riskScore: adjustedResult.riskScore,
+        riskLevel: adjustedResult.riskLevel,
+        decision: adjustedResult.decision,
         isWhitelisted: true,
         cacheHit: false,
         fallbackUsed: false,
@@ -109,22 +141,28 @@ router.post('/', checkRateLimiter, riskCheckValidator, async (req: Request, res:
         responseData: whitelistResult
       }).catch(err => logger.error('Failed to log whitelist check', { err }));
       
-      logger.info('Risk check completed (whitelisted)', {
-        checkId,
-        address: normalizedAddress,
-        chainId,
-        decision: 'ALLOW'
-      });
+        logger.info('Risk check completed (whitelisted)', {
+          checkId,
+          address: normalizedAddress,
+          chainId,
+          decision: adjustedResult.decision,
+          behaviorLevel: behaviorProfile.level,
+          behaviorEscalated: adjustedResult.behaviorEscalated
+        });
       
       res.json({
         checkId,
         address: normalizedAddress,
         chainId,
-        riskScore: 0,
-        riskLevel: 'LOW',
-        decision: 'ALLOW',
+        riskScore: adjustedResult.riskScore,
+        riskLevel: adjustedResult.riskLevel,
+        decision: adjustedResult.decision,
+        baseDecision: 'ALLOW',
         isWhitelisted: true,
-        cacheHit: false
+        cacheHit: false,
+        behavior: behaviorProfile,
+        behaviorEscalated: adjustedResult.behaviorEscalated,
+        behaviorReason: adjustedResult.behaviorReason
       });
       return;
     }
@@ -183,7 +221,8 @@ router.post('/', checkRateLimiter, riskCheckValidator, async (req: Request, res:
         riskScore: 0,
         riskLevel: 'LOW' as const,
         decision: 'ALLOW' as const,
-        fallback: true
+        fallback: true,
+        behavior: behaviorProfile
       };
       
       cacheService.set(
@@ -227,34 +266,55 @@ router.post('/', checkRateLimiter, riskCheckValidator, async (req: Request, res:
         riskLevel: 'LOW',
         decision: 'ALLOW',
         fallback: true,
-        fallbackReason: circuitResult.error || 'Circuit breaker triggered'
+        fallbackReason: circuitResult.error || 'Circuit breaker triggered',
+        behavior: behaviorProfile
       });
       return;
     }
     
     const result = circuitResult.data;
+    const adjustedResult = behaviorAnalyzer.applyBehaviorAdjustment({
+      riskScore: result.riskScore,
+      riskLevel: result.riskLevel,
+      decision: result.decision
+    }, behaviorProfile);
+    const behaviorSignals = behaviorProfile.signals.map((signal) => `Behavior: ${signal}`);
+    const mergedFactors = {
+      ...result.factors,
+      details: [...result.factors.details, ...behaviorSignals]
+    };
     
     prismaService.createCheckLog({
       checkId,
       address: normalizedAddress,
       chainId,
-      riskScore: result.riskScore,
-      riskLevel: result.riskLevel,
-      decision: result.decision,
+      riskScore: adjustedResult.riskScore,
+      riskLevel: adjustedResult.riskLevel,
+      decision: adjustedResult.decision,
       isWhitelisted: false,
       cacheHit: false,
       fallbackUsed: false,
       requestData: req.body,
-      responseData: result
+      responseData: {
+        ...result,
+        factors: mergedFactors,
+        baseDecision: result.decision,
+        behavior: behaviorProfile,
+        behaviorEscalated: adjustedResult.behaviorEscalated,
+        behaviorReason: adjustedResult.behaviorReason
+      }
     }).catch(err => logger.error('Failed to log check', { err }));
     
     logger.info('Risk check completed', {
       checkId,
       address: normalizedAddress,
       chainId,
-      riskScore: result.riskScore,
-      riskLevel: result.riskLevel,
-      decision: result.decision,
+      riskScore: adjustedResult.riskScore,
+      riskLevel: adjustedResult.riskLevel,
+      decision: adjustedResult.decision,
+      baseDecision: result.decision,
+      behaviorLevel: behaviorProfile.level,
+      behaviorEscalated: adjustedResult.behaviorEscalated,
       isSanctioned: result.isSanctioned
     });
     
@@ -262,14 +322,18 @@ router.post('/', checkRateLimiter, riskCheckValidator, async (req: Request, res:
       checkId,
       address: normalizedAddress,
       chainId,
-      riskScore: result.riskScore,
-      riskLevel: result.riskLevel,
-      decision: result.decision,
+      riskScore: adjustedResult.riskScore,
+      riskLevel: adjustedResult.riskLevel,
+      decision: adjustedResult.decision,
+      baseDecision: result.decision,
       riskType: result.riskType,
-      factors: result.factors,
+      factors: mergedFactors,
       isWhitelisted: false,
       cacheHit: false,
-      fallback: false
+      fallback: false,
+      behavior: behaviorProfile,
+      behaviorEscalated: adjustedResult.behaviorEscalated,
+      behaviorReason: adjustedResult.behaviorReason
     };
     
     res.json(response);

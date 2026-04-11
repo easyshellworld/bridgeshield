@@ -111,6 +111,34 @@ describe('POST /api/v1/aml/check', () => {
     expect(res.status).toBe(200);
     expect(res.body.cacheHit).toBe(true);
   });
+
+  it('escalates ALLOW to REVIEW when behavior anomaly is detected', async () => {
+    const uniqueAddress = createUniqueAddress();
+
+    const first = await request(app)
+      .post('/api/v1/aml/check')
+      .send({
+        address: uniqueAddress,
+        chainId: 1,
+        amount: '10'
+      });
+
+    expect(first.status).toBe(200);
+    expect(first.body.decision).toBe('ALLOW');
+
+    const second = await request(app)
+      .post('/api/v1/aml/check')
+      .send({
+        address: uniqueAddress,
+        chainId: 1,
+        amount: '1000000'
+      });
+
+    expect(second.status).toBe(200);
+    expect(second.body.decision).toBe('REVIEW');
+    expect(second.body.behaviorEscalated).toBe(true);
+    expect(second.body.behavior).toBeDefined();
+  });
 });
 
 describe('GET /api/v1/aml/whitelist', () => {
@@ -120,6 +148,91 @@ describe('GET /api/v1/aml/whitelist', () => {
     expect(res.body.total).toBeGreaterThan(0);
     expect(res.body.categories).toBeDefined();
     expect(Array.isArray(res.body.categories)).toBe(true);
+  });
+});
+
+describe('GET /api/v1/composer/quote', () => {
+  const baseQuery = {
+    fromChain: '8453',
+    toChain: '8453',
+    fromToken: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+    toToken: '0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183',
+    toAddress: '0x1234567890abcdef1234567890abcdef12345678',
+    fromAmount: '1000000'
+  };
+
+  it('returns BLOCK when fromAddress is high risk', async () => {
+    const res = await request(app)
+      .get('/api/v1/composer/quote')
+      .query({
+        ...baseQuery,
+        fromAddress: '0x098B716B8Aaf21512996dC57EB0615e2383E2f96'
+      });
+
+    expect(res.status).toBe(403);
+    expect(res.body.blocked).toBe(true);
+    expect(res.body.aml.decision).toBe('BLOCK');
+  });
+
+  it('returns REVIEW confirmation requirement for medium risk address', async () => {
+    const res = await request(app)
+      .get('/api/v1/composer/quote')
+      .query({
+        ...baseQuery,
+        fromAddress: '0x0000000fe6a514a32abdcdfcc076c85243de899b'
+      });
+
+    expect(res.status).toBe(409);
+    expect(res.body.requiresReviewConfirmation).toBe(true);
+    expect(res.body.aml.decision).toBe('REVIEW');
+  });
+
+  it('returns REVIEW for clean address when behavior anomaly is detected', async () => {
+    const uniqueAddress = createUniqueAddress();
+
+    await request(app)
+      .post('/api/v1/aml/check')
+      .send({
+        address: uniqueAddress,
+        chainId: 8453,
+        amount: '10'
+      });
+
+    const res = await request(app)
+      .get('/api/v1/composer/quote')
+      .query({
+        ...baseQuery,
+        fromAddress: uniqueAddress,
+        fromAmount: '100000000'
+      });
+
+    expect(res.status).toBe(409);
+    expect(res.body.requiresReviewConfirmation).toBe(true);
+    expect(res.body.aml.decision).toBe('REVIEW');
+    expect(res.body.aml.behaviorEscalated).toBe(true);
+  });
+});
+
+describe('GET /api/v1/behavior/profile/:wallet', () => {
+  it('returns behavior profile for wallet', async () => {
+    const address = createUniqueAddress();
+
+    await request(app)
+      .post('/api/v1/aml/check')
+      .send({
+        address,
+        chainId: 1,
+        amount: '100'
+      });
+
+    const res = await request(app)
+      .get(`/api/v1/behavior/profile/${address}`)
+      .query({ chainId: 1, amount: '120' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.address).toBe(address.toLowerCase());
+    expect(res.body.behavior).toBeDefined();
+    expect(typeof res.body.behavior.score).toBe('number');
   });
 });
 

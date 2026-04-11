@@ -51,6 +51,11 @@ const RiskResultCard = ({ result }: RiskResultCardProps) => {
             Check completed in {result.processingTimeMs}ms • {result.cached ? 'Cached result' : 'Live scan'}
             {result.fallback && ` • ${result.fallbackReason}`}
           </p>
+          {result.behaviorEscalated && result.baseAction && (
+            <p className="text-warning text-sm mt-1">
+              Behavior escalation: {result.baseAction} → {result.action}
+            </p>
+          )}
         </div>
         <div className={`px-4 py-2 rounded-lg ${colors.bg} ${colors.text} font-bold border ${colors.border}`}>
           {result.riskScore}/100
@@ -66,6 +71,20 @@ const RiskResultCard = ({ result }: RiskResultCardProps) => {
         <div className="p-4 bg-black/20 rounded-lg border border-white/10">
           <h4 className="font-medium mb-1">Recommendation:</h4>
           <p className="text-secondary text-sm">{result.recommendation}</p>
+        </div>
+      )}
+
+      {result.behavior && (
+        <div className="mt-4 p-4 bg-black/20 rounded-lg border border-white/10">
+          <h4 className="font-medium mb-2">C-end Behavior Analysis:</h4>
+          <p className="text-sm text-secondary mb-2">
+            Score {result.behavior.score}/100 • {result.behavior.level} • confidence {result.behavior.confidence}
+          </p>
+          {result.behavior.signals.length > 0 ? (
+            <FactorList factors={result.behavior.signals} />
+          ) : (
+            <p className="text-sm text-secondary">No abnormal behavior signals detected.</p>
+          )}
         </div>
       )}
     </motion.div>

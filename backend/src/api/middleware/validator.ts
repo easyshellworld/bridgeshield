@@ -34,6 +34,18 @@ export const validateChainId = (chainId: number): boolean => {
   return chainId > 0;
 };
 
+const getSingleQueryValue = (value: unknown): string | undefined => {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') {
+    return value[0];
+  }
+
+  return undefined;
+};
+
 export const validateRiskCheckInput = (req: Request): ValidationErrorItem[] => {
   const errors: ValidationErrorItem[] = [];
   const { address, chainId } = req.body;
@@ -89,6 +101,99 @@ export const validateAppealInput = (req: Request): ValidationErrorItem[] => {
   return errors;
 };
 
+export const validateEarnVaultDetailInput = (req: Request): ValidationErrorItem[] => {
+  const errors: ValidationErrorItem[] = [];
+  const { network, address } = req.params;
+
+  if (!network || network.trim().length === 0) {
+    errors.push({ field: 'network', message: 'Network is required' });
+  }
+
+  if (!address) {
+    errors.push({ field: 'address', message: 'Vault address is required' });
+  } else if (!validateAddress(address)) {
+    errors.push({ field: 'address', message: 'Invalid vault address format' });
+  }
+
+  return errors;
+};
+
+export const validateEarnPortfolioInput = (req: Request): ValidationErrorItem[] => {
+  const errors: ValidationErrorItem[] = [];
+  const { wallet } = req.params;
+
+  if (!wallet) {
+    errors.push({ field: 'wallet', message: 'Wallet address is required' });
+  } else if (!validateAddress(wallet)) {
+    errors.push({ field: 'wallet', message: 'Invalid wallet address format' });
+  }
+
+  return errors;
+};
+
+export const validateComposerQuoteInput = (req: Request): ValidationErrorItem[] => {
+  const errors: ValidationErrorItem[] = [];
+
+  const fromChain = getSingleQueryValue(req.query.fromChain);
+  const toChain = getSingleQueryValue(req.query.toChain);
+  const fromToken = getSingleQueryValue(req.query.fromToken);
+  const toToken = getSingleQueryValue(req.query.toToken);
+  const fromAddress = getSingleQueryValue(req.query.fromAddress);
+  const toAddress = getSingleQueryValue(req.query.toAddress);
+  const fromAmount = getSingleQueryValue(req.query.fromAmount);
+  const reviewConfirmed = getSingleQueryValue(req.query.reviewConfirmed);
+
+  if (!fromChain) {
+    errors.push({ field: 'fromChain', message: 'fromChain is required' });
+  } else if (!validateChainId(parseInt(fromChain, 10))) {
+    errors.push({ field: 'fromChain', message: 'fromChain must be a positive integer' });
+  }
+
+  if (!toChain) {
+    errors.push({ field: 'toChain', message: 'toChain is required' });
+  } else if (!validateChainId(parseInt(toChain, 10))) {
+    errors.push({ field: 'toChain', message: 'toChain must be a positive integer' });
+  }
+
+  if (!fromToken) {
+    errors.push({ field: 'fromToken', message: 'fromToken is required' });
+  } else if (!validateAddress(fromToken)) {
+    errors.push({ field: 'fromToken', message: 'Invalid fromToken address format' });
+  }
+
+  if (!toToken) {
+    errors.push({ field: 'toToken', message: 'toToken is required' });
+  } else if (!validateAddress(toToken)) {
+    errors.push({ field: 'toToken', message: 'Invalid toToken address format' });
+  }
+
+  if (!fromAddress) {
+    errors.push({ field: 'fromAddress', message: 'fromAddress is required' });
+  } else if (!validateAddress(fromAddress)) {
+    errors.push({ field: 'fromAddress', message: 'Invalid fromAddress format' });
+  }
+
+  if (!toAddress) {
+    errors.push({ field: 'toAddress', message: 'toAddress is required' });
+  } else if (!validateAddress(toAddress)) {
+    errors.push({ field: 'toAddress', message: 'Invalid toAddress format' });
+  }
+
+  if (!fromAmount) {
+    errors.push({ field: 'fromAmount', message: 'fromAmount is required' });
+  } else if (!/^\d+$/.test(fromAmount)) {
+    errors.push({ field: 'fromAmount', message: 'fromAmount must be an integer string in smallest unit' });
+  } else if (BigInt(fromAmount) <= 0n) {
+    errors.push({ field: 'fromAmount', message: 'fromAmount must be greater than zero' });
+  }
+
+  if (reviewConfirmed && reviewConfirmed !== 'true' && reviewConfirmed !== 'false') {
+    errors.push({ field: 'reviewConfirmed', message: 'reviewConfirmed must be "true" or "false"' });
+  }
+
+  return errors;
+};
+
 export const riskCheckValidator = (req: Request, res: Response, next: NextFunction): void => {
   const errors = validateRiskCheckInput(req);
   
@@ -116,6 +221,51 @@ export const appealValidator = (req: Request, res: Response, next: NextFunction)
     return;
   }
   
+  next();
+};
+
+export const earnVaultDetailValidator = (req: Request, res: Response, next: NextFunction): void => {
+  const errors = validateEarnVaultDetailInput(req);
+
+  if (errors.length > 0) {
+    logger.warn('Earn vault detail validation failed', { errors, params: req.params });
+    res.status(400).json({
+      error: 'Validation failed',
+      errors
+    });
+    return;
+  }
+
+  next();
+};
+
+export const earnPortfolioValidator = (req: Request, res: Response, next: NextFunction): void => {
+  const errors = validateEarnPortfolioInput(req);
+
+  if (errors.length > 0) {
+    logger.warn('Earn portfolio validation failed', { errors, params: req.params });
+    res.status(400).json({
+      error: 'Validation failed',
+      errors
+    });
+    return;
+  }
+
+  next();
+};
+
+export const composerQuoteValidator = (req: Request, res: Response, next: NextFunction): void => {
+  const errors = validateComposerQuoteInput(req);
+
+  if (errors.length > 0) {
+    logger.warn('Composer quote validation failed', { errors, query: req.query });
+    res.status(400).json({
+      error: 'Validation failed',
+      errors
+    });
+    return;
+  }
+
   next();
 };
 

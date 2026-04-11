@@ -1,86 +1,47 @@
-import { AMLCheckResult, Stats } from '../types';
-import { DEMO_ADDRESSES } from '../constants/demo-addresses';
+import {
+  AMLCheckResult,
+  ComposerQuoteRequest,
+  ComposerQuoteResponse,
+  EarnPortfolioResponse,
+  EarnVaultDetailResponse,
+  EarnVaultListResponse,
+  Stats
+} from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 const TIMEOUT = 5000;
-
-// Mock results for fallback
-const MOCK_RESULTS: Record<string, AMLCheckResult> = {
-  '0x098B716B8Aaf21512996dC57EB0615e2383E2f96': {
-    address: '0x098B716B8Aaf21512996dC57EB0615e2383E2f96',
-    riskScore: 98,
-    riskLevel: 'HIGH',
-    action: 'BLOCK',
-    riskFactors: [
-      'Associated with Ronin Bridge hack ($625M stolen)',
-      'Known attacker address reported by Chainalysis',
-      'Multiple interactions with sanctioned mixers',
-      'High risk AML flag from OFAC database'
-    ],
-    recommendation: 'Block this address immediately to prevent stolen funds from entering your protocol.',
-    cached: false,
-    processingTimeMs: 120,
-    fallback: true,
-    fallbackReason: 'API unavailable, using mock data'
-  },
-  '0xd90e2f925DA726b50C4Ed8D0Fb90Ad053324F31b': {
-    address: '0xd90e2f925DA726b50C4Ed8D0Fb90Ad053324F31b',
-    riskScore: 92,
-    riskLevel: 'HIGH',
-    action: 'BLOCK',
-    riskFactors: [
-      'Tornado Cash mixer contract (OFAC sanctioned)',
-      'Used for money laundering of stolen funds',
-      'High volume of anonymous transactions',
-      'Listed on global AML blacklists'
-    ],
-    recommendation: 'Block all transactions to/from this address to comply with regulatory requirements.',
-    cached: false,
-    processingTimeMs: 95,
-    fallback: true,
-    fallbackReason: 'API unavailable, using mock data'
-  },
-  '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84': {
-    address: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
-    riskScore: 2,
-    riskLevel: 'LOW',
-    action: 'ALLOW',
-    riskFactors: [
-      'Whitelisted protocol (Lido stETH)',
-      'No negative AML history',
-      'Verified smart contract',
-      'High trust score from multiple sources'
-    ],
-    recommendation: 'Allow all transactions, address is fully verified and low risk.',
-    cached: false,
-    processingTimeMs: 78,
-    fallback: true,
-    fallbackReason: 'API unavailable, using mock data'
-  },
-  '0x1F98431c8aD98523631AE4a59f267346ea31F984': {
-    address: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
-    riskScore: 0,
-    riskLevel: 'LOW',
-    action: 'ALLOW',
-    riskFactors: [
-      'Whitelisted protocol (Uniswap V3 Factory)',
-      'Fully audited smart contract',
-      'No suspicious activity reported',
-      'Industry-standard trusted protocol'
-    ],
-    recommendation: 'Allow all transactions, address is explicitly whitelisted.',
-    cached: false,
-    processingTimeMs: 65,
-    fallback: true,
-    fallbackReason: 'API unavailable, using mock data'
-  }
-};
 
 // Helper to create abort signal with timeout
 const createTimeoutSignal = (timeoutMs: number) => {
   const controller = new AbortController();
   setTimeout(() => controller.abort(), timeoutMs);
   return controller.signal;
+};
+
+const buildQueryString = (params: Record<string, string | number | boolean | undefined>): string => {
+  const query = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined) continue;
+    query.set(key, String(value));
+  }
+
+  return query.toString();
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const readErrorMessage = (payload: unknown, fallback: string): string => {
+  if (isRecord(payload) && typeof payload.message === 'string') {
+    return payload.message;
+  }
+
+  if (isRecord(payload) && typeof payload.error === 'string') {
+    return payload.error;
+  }
+
+  return fallback;
 };
 
 function transformCheckResult(backendResponse: any): AMLCheckResult {
@@ -100,6 +61,9 @@ function transformCheckResult(backendResponse: any): AMLCheckResult {
       return `Block this transaction. ${riskType ? `Risk type: ${riskType}.` : ''} Do not proceed.`;
     }
     if (decision === 'REVIEW') {
+      if (backendResponse.behaviorEscalated && backendResponse.behavior?.recommendation) {
+        return backendResponse.behavior.recommendation;
+      }
       return 'Review this transaction manually before proceeding.';
     }
     return 'Transaction appears safe. Low risk detected.';
@@ -110,6 +74,7 @@ function transformCheckResult(backendResponse: any): AMLCheckResult {
     riskScore: backendResponse.riskScore || 0,
     riskLevel: backendResponse.riskLevel || 'LOW',
     action: backendResponse.decision || 'ALLOW',
+    baseAction: backendResponse.baseDecision,
     riskFactors,
     recommendation: getRecommendation(backendResponse.decision, backendResponse.riskType),
     cached: backendResponse.cacheHit ?? false,
@@ -117,6 +82,9 @@ function transformCheckResult(backendResponse: any): AMLCheckResult {
     processingTimeMs: 0,
     fallback: backendResponse.fallback ?? false,
     fallbackReason: backendResponse.fallbackReason,
+    behavior: backendResponse.behavior,
+    behaviorEscalated: backendResponse.behaviorEscalated ?? false,
+    behaviorReason: backendResponse.behaviorReason
   };
 }
 
@@ -131,76 +99,44 @@ export const checkAddress = async (address: string, chainId: number = 1): Promis
       body: JSON.stringify({ address, chainId }),
       signal,
     });
-
-    // 4xx errors: input problem - throw to show real error
-    if (response.status >= 400 && response.status < 500) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Input error: ${response.status}`);
-    }
-
-    // 5xx errors: server problem - fallback to mock
+    const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      // Fallback to mock data for server errors
-      const mockKey = Object.keys(MOCK_RESULTS).find(k => k.toLowerCase() === address.toLowerCase());
-      if (mockKey) {
-        const mockResult = MOCK_RESULTS[mockKey];
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 50));
-        return { ...mockResult, fallbackReason: 'Server error, using cached data' };
+      if (response.status >= 400 && response.status < 500) {
+        throw new Error(readErrorMessage(payload, `Input error: ${response.status}`));
       }
-      return {
-        address,
-        riskScore: Math.floor(Math.random() * 50) + 10,
-        riskLevel: 'MEDIUM',
-        action: 'REVIEW',
-        riskFactors: ['Server temporarily unavailable', 'Please try again later'],
-        recommendation: 'System degraded - manual review recommended.',
-        cached: false,
-        processingTimeMs: 150,
-        fallback: true,
-        fallbackReason: 'Server error, using fallback data'
-      };
+
+      throw new Error(readErrorMessage(payload, `Server error: ${response.status}`));
     }
 
-    const backendResponse = await response.json();
-    return transformCheckResult(backendResponse);
+    return transformCheckResult(payload);
   } catch (error: unknown) {
-    if (error instanceof TypeError || error instanceof DOMException || (error as any)?.name === 'AbortError') {
-      const mockKey = Object.keys(MOCK_RESULTS).find(k => k.toLowerCase() === address.toLowerCase());
-      if (mockKey) {
-        const mockResult = MOCK_RESULTS[mockKey];
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 50));
-        return { ...mockResult, fallbackReason: 'Network error, using cached data' };
-      }
-      return {
-        address,
-        riskScore: Math.floor(Math.random() * 50) + 10,
-        riskLevel: 'MEDIUM',
-        action: 'REVIEW',
-        riskFactors: ['Network connection failed', 'Unable to reach AML service'],
-        recommendation: 'System unavailable - manual review required.',
-        cached: false,
-        processingTimeMs: 150,
-        fallback: true,
-        fallbackReason: 'Network error, using fallback data'
-      };
+    const maybeAbortError = isRecord(error) && error.name === 'AbortError';
+    if (maybeAbortError) {
+      throw new Error('Request timed out while contacting BridgeShield API.');
     }
-    // Re-throw 4xx validation errors
-    throw error;
+
+    if (error instanceof TypeError) {
+      throw new Error('Network error: unable to reach BridgeShield API.');
+    }
+
+    throw error instanceof Error ? error : new Error('Unexpected error while checking address');
   }
 };
 
 export const getWhitelist = async () => {
-  try {
-    const signal = createTimeoutSignal(TIMEOUT);
-    const response = await fetch(`${BASE_URL}/api/v1/aml/whitelist`, { signal });
-    if (!response.ok) throw new Error('Failed to fetch whitelist');
-    const data = await response.json();
-    return { total: data.total, categories: data.categories };
-  } catch (error) {
-    // Return mock whitelist structure
-    const whitelistAddresses = DEMO_ADDRESSES.filter(a => a.expectedResult === 'ALLOW').map(a => a.address);
-    return { total: whitelistAddresses.length, categories: [] };
+  const signal = createTimeoutSignal(TIMEOUT);
+  const response = await fetch(`${BASE_URL}/api/v1/aml/whitelist`, { signal });
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(readErrorMessage(payload, 'Failed to fetch whitelist'));
   }
+
+  if (!isRecord(payload) || typeof payload.total !== 'number' || !Array.isArray(payload.categories)) {
+    throw new Error('Invalid whitelist response from backend');
+  }
+
+  return { total: payload.total, categories: payload.categories };
 };
 
 export const submitAppeal = async (address: string, reason: string, contact: string): Promise<{ success: boolean; error?: string }> => {
@@ -239,28 +175,137 @@ export const getHealth = async () => {
 };
 
 export const getStats = async (): Promise<Stats> => {
-  try {
-    const signal = createTimeoutSignal(TIMEOUT);
-    const response = await fetch(`${BASE_URL}/api/v1/health`, { signal });
-    if (response.ok) {
-      const data = await response.json();
-      const cacheHits = data.services?.cache?.stats?.hits || 0;
-      const cacheMisses = data.services?.cache?.stats?.misses || 0;
-      return {
-        totalChecks: cacheHits + cacheMisses,
-        totalBlocks: 0,  // Not directly available from health
-        averageResponseTimeMs: 89,
-        status: data.status === 'healthy' ? 'online' as const : 'offline' as const
-      };
-    }
-  } catch (error) {
-    // Fallback to mock stats
+  const signal = createTimeoutSignal(TIMEOUT);
+  const response = await fetch(`${BASE_URL}/api/v1/health`, { signal });
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(readErrorMessage(payload, 'Failed to fetch health status'));
   }
 
+  if (!isRecord(payload)) {
+    throw new Error('Invalid health response from backend');
+  }
+
+  const services = isRecord(payload.services) ? payload.services : {};
+  const cacheService = isRecord(services.cache) ? services.cache : {};
+  const cacheStats = isRecord(cacheService.stats) ? cacheService.stats : {};
+  const cacheHits = typeof cacheStats.hits === 'number' ? cacheStats.hits : 0;
+  const cacheMisses = typeof cacheStats.misses === 'number' ? cacheStats.misses : 0;
+  const statusRaw = typeof payload.status === 'string' ? payload.status : 'unhealthy';
+  const isOnline = statusRaw === 'healthy' || statusRaw === 'degraded';
+
   return {
-    totalChecks: 12458,
-    totalBlocks: 987,
-    averageResponseTimeMs: 89,
-    status: 'offline' as const
+    totalChecks: cacheHits + cacheMisses,
+    totalBlocks: 0,
+    averageResponseTimeMs: 0,
+    status: isOnline ? 'online' : 'offline'
   };
+};
+
+export const getEarnVaults = async (params?: { chainId?: number; cursor?: string }): Promise<EarnVaultListResponse> => {
+  const signal = createTimeoutSignal(TIMEOUT);
+  const queryString = buildQueryString({
+    chainId: params?.chainId,
+    cursor: params?.cursor
+  });
+
+  const response = await fetch(`${BASE_URL}/api/v1/earn/vaults${queryString ? `?${queryString}` : ''}`, {
+    method: 'GET',
+    signal
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = (payload as { message?: string }).message || 'Failed to fetch vault list';
+    throw new Error(message);
+  }
+
+  const normalized = payload as Partial<EarnVaultListResponse>;
+  if (Array.isArray(normalized.data)) {
+    return normalized as EarnVaultListResponse;
+  }
+
+  throw new Error('Invalid vault list response from backend');
+};
+
+export const getEarnVaultDetail = async (network: string, address: string): Promise<EarnVaultDetailResponse> => {
+  const signal = createTimeoutSignal(TIMEOUT);
+  const response = await fetch(`${BASE_URL}/api/v1/earn/vault/${encodeURIComponent(network)}/${encodeURIComponent(address)}`, {
+    method: 'GET',
+    signal
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = (payload as { message?: string }).message || 'Failed to fetch vault detail';
+    throw new Error(message);
+  }
+
+  return payload as EarnVaultDetailResponse;
+};
+
+export const getEarnPortfolio = async (wallet: string): Promise<EarnPortfolioResponse> => {
+  const signal = createTimeoutSignal(TIMEOUT);
+  const response = await fetch(`${BASE_URL}/api/v1/earn/portfolio/${encodeURIComponent(wallet)}`, {
+    method: 'GET',
+    signal
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = (payload as { message?: string }).message || 'Failed to fetch portfolio';
+    throw new Error(message);
+  }
+
+  const normalized = payload as Partial<EarnPortfolioResponse> & { data?: Array<Record<string, unknown>> };
+  if (Array.isArray(normalized.positions)) {
+    return normalized as EarnPortfolioResponse;
+  }
+
+  if (Array.isArray(normalized.data)) {
+    return {
+      ...normalized,
+      positions: normalized.data
+    } as EarnPortfolioResponse;
+  }
+
+  if (isRecord(payload) && Array.isArray(payload.positions)) {
+    return payload as EarnPortfolioResponse;
+  }
+
+  throw new Error('Invalid portfolio response from backend');
+};
+
+export const buildCompliantComposerQuote = async (request: ComposerQuoteRequest): Promise<ComposerQuoteResponse> => {
+  const signal = createTimeoutSignal(TIMEOUT);
+  const queryString = buildQueryString({
+    fromChain: request.fromChain,
+    toChain: request.toChain,
+    fromToken: request.fromToken,
+    toToken: request.toToken,
+    fromAddress: request.fromAddress,
+    toAddress: request.toAddress,
+    fromAmount: request.fromAmount,
+    reviewConfirmed: request.reviewConfirmed
+  });
+
+  const response = await fetch(`${BASE_URL}/api/v1/composer/quote?${queryString}`, {
+    method: 'GET',
+    signal
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok && response.status !== 403 && response.status !== 409) {
+    const message = (payload as { message?: string; error?: string }).message ||
+      (payload as { message?: string; error?: string }).error ||
+      'Failed to build Composer quote';
+    throw new Error(message);
+  }
+
+  if (!payload || typeof payload !== 'object' || !('aml' in payload)) {
+    throw new Error('Invalid response from Composer gate API');
+  }
+
+  return payload as ComposerQuoteResponse;
 };

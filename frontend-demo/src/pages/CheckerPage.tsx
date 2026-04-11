@@ -10,13 +10,16 @@ import LiveStats from '../components/LiveStats';
 import { checkAddress, getStats } from '../api/bridgeshield';
 import { AMLCheckResult, Stats } from '../types';
 
-const INTEGRATION_CODE = `// Add BridgeShield to your LI.FI integration in 3 lines
-import { BridgeShield } from '@bridgeshield/sdk';
+const INTEGRATION_CODE = `// Add BridgeShield to your LI.FI integration
+import { BridgeShieldClient } from '@bridgeshield/sdk';
 
-const shield = new BridgeShield('YOUR_API_KEY');
-const result = await shield.checkAddress(userAddress, chainId);
+const shield = new BridgeShieldClient({
+  baseUrl: 'https://api.bridgeshield.io',
+  apiKey: 'YOUR_API_KEY',
+});
+const result = await shield.checkAddress({ address: userAddress, chainId });
 
-if (result.action === 'BLOCK') {
+if (result.decision === 'BLOCK') {
   // Block high risk transactions
   throw new Error('Address blocked due to AML risk');
 }`;
@@ -24,18 +27,24 @@ if (result.action === 'BLOCK') {
 const CheckerPage = () => {
   const [result, setResult] = useState<AMLCheckResult | null>(null);
   const [isChecking, setIsChecking] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const { data: stats } = useQuery<Stats>({
+  const { data: stats, error: statsError } = useQuery<Stats>({
     queryKey: ['stats'],
     queryFn: getStats,
     refetchInterval: 5000,
+    retry: false,
   });
 
   const handleCheck = async (addr: string) => {
     setIsChecking(true);
+    setErrorMessage(null);
     try {
       const res = await checkAddress(addr);
       setResult(res);
+    } catch (error) {
+      setResult(null);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to check address');
     } finally {
       setIsChecking(false);
     }
@@ -60,6 +69,7 @@ const CheckerPage = () => {
           <nav className="flex items-center gap-6">
             <Link to="/" className="text-primary font-medium">Check</Link>
             <Link to="/compare" className="text-secondary hover:text-white transition-colors">Compare vs LI.FI</Link>
+            <Link to="/earn-flow" className="text-secondary hover:text-white transition-colors">Earn Flow</Link>
           </nav>
         </div>
       </header>
@@ -75,11 +85,21 @@ const CheckerPage = () => {
               Stop <span className="text-danger">stolen funds</span> before they enter your protocol
             </h2>
             <p className="text-secondary text-lg max-w-2xl mx-auto">
-              Real-time AML risk screening for every cross-chain transaction. Seamless integration with LI.FI.
+              Real-time AML + C-end behavior screening for every cross-chain transaction. Seamless integration with LI.FI.
             </p>
           </motion.div>
 
           <AddressInput onSubmit={handleCheck} isLoading={isChecking} />
+          {errorMessage && (
+            <div className="mt-4 p-4 rounded-lg border border-danger/30 bg-danger/10 text-danger text-sm">
+              {errorMessage}
+            </div>
+          )}
+          {statsError instanceof Error && (
+            <div className="mt-4 p-4 rounded-lg border border-warning/30 bg-warning/10 text-warning text-sm">
+              Live stats unavailable: {statsError.message}
+            </div>
+          )}
 
           {result && !isChecking && (
             <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto items-center">

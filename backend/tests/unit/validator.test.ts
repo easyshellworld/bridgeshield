@@ -4,6 +4,9 @@ import {
   validateChainId,
   validateRiskCheckInput,
   validateAppealInput,
+  validateEarnVaultDetailInput,
+  validateEarnPortfolioInput,
+  validateComposerQuoteInput,
   ValidationErrorItem
 } from '../../src/api/middleware/validator';
 import { Request } from 'express';
@@ -286,6 +289,123 @@ describe('Validator', () => {
         { field: 'address', message: 'Invalid EVM address format' },
         { field: 'chainId', message: 'Chain ID must be a positive integer' },
         { field: 'reason', message: 'Appeal reason is required' }
+      ]);
+    });
+  });
+
+  describe('validateEarnVaultDetailInput', () => {
+    const createMockRequest = (params: any): Request => ({
+      params
+    } as Request);
+
+    it('should return empty array for valid params', () => {
+      const req = createMockRequest({
+        network: 'base',
+        address: '0x1234567890abcdef1234567890abcdef12345678'
+      });
+
+      const errors = validateEarnVaultDetailInput(req);
+      expect(errors).toEqual([]);
+    });
+
+    it('should return errors for invalid params', () => {
+      const req = createMockRequest({
+        network: '',
+        address: 'invalid'
+      });
+
+      const errors = validateEarnVaultDetailInput(req);
+      expect(errors).toEqual([
+        { field: 'network', message: 'Network is required' },
+        { field: 'address', message: 'Invalid vault address format' }
+      ]);
+    });
+  });
+
+  describe('validateEarnPortfolioInput', () => {
+    const createMockRequest = (params: any): Request => ({
+      params
+    } as Request);
+
+    it('should return empty array for valid wallet', () => {
+      const req = createMockRequest({
+        wallet: '0x1234567890abcdef1234567890abcdef12345678'
+      });
+
+      const errors = validateEarnPortfolioInput(req);
+      expect(errors).toEqual([]);
+    });
+
+    it('should return errors for invalid wallet', () => {
+      const req = createMockRequest({
+        wallet: 'bad-wallet'
+      });
+
+      const errors = validateEarnPortfolioInput(req);
+      expect(errors).toEqual([
+        { field: 'wallet', message: 'Invalid wallet address format' }
+      ]);
+    });
+  });
+
+  describe('validateComposerQuoteInput', () => {
+    const createMockRequest = (query: any): Request => ({
+      query
+    } as Request);
+
+    it('should return empty array for valid query', () => {
+      const req = createMockRequest({
+        fromChain: '8453',
+        toChain: '8453',
+        fromToken: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+        toToken: '0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183',
+        fromAddress: '0x1234567890abcdef1234567890abcdef12345678',
+        toAddress: '0x1234567890abcdef1234567890abcdef12345678',
+        fromAmount: '1000000'
+      });
+
+      const errors = validateComposerQuoteInput(req);
+      expect(errors).toEqual([]);
+    });
+
+    it('should return error for missing required query fields', () => {
+      const req = createMockRequest({
+        fromChain: '8453'
+      });
+
+      const errors = validateComposerQuoteInput(req);
+      expect(errors).toEqual([
+        { field: 'toChain', message: 'toChain is required' },
+        { field: 'fromToken', message: 'fromToken is required' },
+        { field: 'toToken', message: 'toToken is required' },
+        { field: 'fromAddress', message: 'fromAddress is required' },
+        { field: 'toAddress', message: 'toAddress is required' },
+        { field: 'fromAmount', message: 'fromAmount is required' }
+      ]);
+    });
+
+    it('should return error for invalid query values', () => {
+      const req = createMockRequest({
+        fromChain: '0',
+        toChain: '-1',
+        fromToken: 'bad',
+        toToken: 'bad',
+        fromAddress: 'bad',
+        toAddress: 'bad',
+        fromAmount: '1.2',
+        reviewConfirmed: 'yes'
+      });
+
+      const errors = validateComposerQuoteInput(req);
+      expect(errors).toEqual([
+        { field: 'fromChain', message: 'fromChain must be a positive integer' },
+        { field: 'toChain', message: 'toChain must be a positive integer' },
+        { field: 'fromToken', message: 'Invalid fromToken address format' },
+        { field: 'toToken', message: 'Invalid toToken address format' },
+        { field: 'fromAddress', message: 'Invalid fromAddress format' },
+        { field: 'toAddress', message: 'Invalid toAddress format' },
+        { field: 'fromAmount', message: 'fromAmount must be an integer string in smallest unit' },
+        { field: 'reviewConfirmed', message: 'reviewConfirmed must be "true" or "false"' }
       ]);
     });
   });

@@ -8,14 +8,17 @@ import { AMLCheckResult } from '../types';
 
 const COMPARE_INTEGRATION_CODE = `// LI.FI + BridgeShield Integration Example
 import { LiFi } from '@lifi/sdk';
-import { BridgeShield } from '@bridgeshield/sdk';
+import { BridgeShieldClient } from '@bridgeshield/sdk';
 
 const lifi = new LiFi();
-const shield = new BridgeShield('YOUR_API_KEY');
+const shield = new BridgeShieldClient({
+  baseUrl: 'https://api.bridgeshield.io',
+  apiKey: 'YOUR_API_KEY',
+});
 
 // Check address before executing swap
-const riskCheck = await shield.checkAddress(userAddress, chainId);
-if (riskCheck.action === 'BLOCK') {
+const riskCheck = await shield.checkAddress({ address: userAddress, chainId });
+if (riskCheck.decision === 'BLOCK') {
   alert('Transaction blocked: High AML risk');
   return;
 }
@@ -28,13 +31,18 @@ const ComparePage = () => {
   const [address, setAddress] = useState<string | null>(null);
   const [result, setResult] = useState<AMLCheckResult | null>(null);
   const [isChecking, setIsChecking] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleCheck = async (addr: string) => {
     setAddress(addr);
     setIsChecking(true);
+    setErrorMessage(null);
     try {
       const res = await checkAddress(addr);
       setResult(res);
+    } catch (error) {
+      setResult(null);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to check address');
     } finally {
       setIsChecking(false);
     }
@@ -59,6 +67,7 @@ const ComparePage = () => {
           <nav className="flex items-center gap-6">
             <Link to="/" className="text-secondary hover:text-white transition-colors">Check</Link>
             <Link to="/compare" className="text-primary font-medium">Compare vs LI.FI</Link>
+            <Link to="/earn-flow" className="text-secondary hover:text-white transition-colors">Earn Flow</Link>
           </nav>
         </div>
       </header>
@@ -75,6 +84,11 @@ const ComparePage = () => {
           </div>
 
           <AddressInput onSubmit={handleCheck} isLoading={isChecking} />
+          {errorMessage && (
+            <div className="mt-4 p-4 rounded-lg border border-danger/30 bg-danger/10 text-danger text-sm">
+              {errorMessage}
+            </div>
+          )}
 
           {address && (
             <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
