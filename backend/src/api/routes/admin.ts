@@ -3,6 +3,16 @@ import { PrismaService } from '../../db/prisma-client';
 import { CacheService, CacheTier } from '../../services/cache-service';
 import { logger } from '../middleware/logger';
 
+interface RiskCheckResponse {
+  isWhitelisted?: boolean;
+  factors?: {
+    details?: string[];
+  } | string[];
+  riskType?: string;
+  fallback?: boolean;
+  fallbackReason?: string;
+}
+
 const router = Router();
 const prismaService = PrismaService.getInstance();
 const cacheService = CacheService.getInstance();
@@ -13,14 +23,14 @@ const parseRiskFactors = (responseData: string | null): string[] => {
   }
 
   try {
-    const parsed = JSON.parse(responseData) as any;
+    const parsed = JSON.parse(responseData) as unknown as RiskCheckResponse;
 
     if (parsed.isWhitelisted) {
       return ['Whitelisted address'];
     }
 
-    if (parsed.factors?.details && Array.isArray(parsed.factors.details)) {
-      return parsed.factors.details;
+    if (parsed.factors && typeof parsed.factors === 'object' && !Array.isArray(parsed.factors) && 'details' in parsed.factors) {
+      return (parsed.factors as { details?: string[] }).details || [];
     }
 
     if (Array.isArray(parsed.factors)) {
@@ -218,18 +228,18 @@ router.get('/dashboard/risk-distribution', async (req: Request, res: Response) =
       SCAM: 0
     };
 
-    allChecks.forEach(check => {
-      if (check.responseData) {
-        try {
-          const data = JSON.parse(check.responseData) as any;
-          if (data.riskType && typeof data.riskType === 'string' && sourceCounts[data.riskType] !== undefined) {
-            sourceCounts[data.riskType]++;
-          }
-        } catch (e) {
-          // Parse errors for malformed JSON are expected for some entries
-        }
-      }
-    });
+     allChecks.forEach(check => {
+       if (check.responseData) {
+         try {
+           const data = JSON.parse(check.responseData) as unknown as RiskCheckResponse;
+           if (data.riskType && typeof data.riskType === 'string' && sourceCounts[data.riskType] !== undefined) {
+             sourceCounts[data.riskType]++;
+           }
+         } catch (e) {
+           // Parse errors for malformed JSON are expected for some entries
+         }
+       }
+     });
 
     const levelData = [
       { name: 'LOW', value: riskLevels.find(r => r.riskLevel === 'LOW')?._count || 0, color: '#22C55E' },

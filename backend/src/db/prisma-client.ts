@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { logger } from '../api/middleware/logger';
 
 export class PrismaService {
-  private static instance: PrismaService;
+  private static instance: PrismaService | undefined;
   private prisma: PrismaClient;
   
   private constructor() {
@@ -26,7 +26,7 @@ export class PrismaService {
     if (PrismaService.instance) {
       PrismaService.instance.prisma.$disconnect().catch(() => {});
     }
-    PrismaService.instance = undefined as any;
+    PrismaService.instance = undefined;
   }
   
   public getClient(): PrismaClient {
@@ -73,8 +73,8 @@ export class PrismaService {
     isWhitelisted: boolean;
     cacheHit: boolean;
     fallbackUsed: boolean;
-    requestData?: any;
-    responseData?: any;
+    requestData?: unknown;
+    responseData?: unknown;
   }) {
     try {
       return await this.prisma.checkLog.create({ 
@@ -129,7 +129,7 @@ export class PrismaService {
     userId?: string;
     ipAddress?: string;
     userAgent?: string;
-    metadata?: any;
+    metadata?: unknown;
   }) {
     try {
       return await this.prisma.auditLog.create({ 

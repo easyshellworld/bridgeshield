@@ -10,6 +10,17 @@ import { logger } from '../middleware/logger';
 import { riskCheckValidator } from '../middleware/validator';
 import { checkRateLimiter } from '../middleware/rate-limiter';
 
+interface RiskCheckResponse {
+  riskScore: number;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  decision: 'ALLOW' | 'REVIEW' | 'BLOCK';
+  factors: {
+    details: string[];
+  };
+  isSanctioned?: boolean;
+  riskType?: string;
+}
+
 const router = Router();
 const riskDataLoader = RiskDataLoader.getInstance();
 const cacheService = CacheService.getInstance();
@@ -272,7 +283,7 @@ router.post('/', checkRateLimiter, riskCheckValidator, async (req: Request, res:
       return;
     }
     
-    const result = circuitResult.data;
+    const result = circuitResult.data as RiskCheckResponse;
     const adjustedResult = behaviorAnalyzer.applyBehaviorAdjustment({
       riskScore: result.riskScore,
       riskLevel: result.riskLevel,

@@ -2,6 +2,101 @@
 
 ---
 
+## 2026-04-11 — v0.0.5 Earn API + Composer + 行为分析
+
+### 概述
+新增 Earn API 代理路由、AML-gated Composer 报价路由，以及 C 端钱包行为分析与异常检测功能。
+
+### 变更内容
+
+**Backend — 新增 Earn 代理路由 (`src/api/routes/earn.ts`)**
+- `GET /api/v1/earn/vaults` — 代理 vault 发现（从 Earn Data API）
+- `GET /api/v1/earn/vault/:network/:address` — 代理单个 vault 详情
+- `GET /api/v1/earn/portfolio/:wallet` — 代理钱包组合持仓
+
+**Backend — 新增 Composer 路由 (`src/api/routes/composer.ts`)**
+- `GET /api/v1/composer/quote` — AML 风控门控的 LI.FI Composer 报价
+- 支持 `BLOCK`/`REVIEW`/`ALLOW` 三种决策
+- 需要 `COMPOSER_API_KEY` 环境变量
+
+**Backend — 新增行为分析路由 (`src/api/routes/behavior.ts`)**
+- `GET /api/v1/behavior/profile/:wallet` — C 端钱包行为画像
+- 返回异常信号（velocity、chain novelty、amount spikes、decision drift）
+
+**Backend — 行为分析服务 (`src/services/behavior-analyzer.ts`)**
+- 4 类异常检测：
+  - **Velocity Anomaly** — 24h/7d 检查频率异常
+  - **Chain Novelty** — 跨链新颖性（链历史不足）
+  - **Amount Spike** — 大额转账异常（vs 历史均值）
+  - **Decision Drift** — 决策漂移（REVIEW/ALLOW 比例变化）
+- `analyzeAddressBehavior()` — 综合分析函数
+
+**Backend — 验证中间件增强 (`src/api/middleware/validator.ts`)**
+- 新增 vault/portfolio 数据验证规则
+- 新增 `validateEarnVaultsQuery`、`validateEarnPortfolioParams` 等验证器
+- 完善 `validateCheckBody`、`validateCheckChainId` 等现有验证器
+
+**Frontend Demo — Earn 集成流程页 (`src/pages/EarnFlowPage.tsx`)**
+- 905 行完整实现
+- 展示 LI.FI Earn 产品的 AML 风控集成流程
+- 支持 vault 发现、详情查询、组合展示
+
+**Frontend Demo — API 客户端 (`src/api/bridgeshield.ts`)**
+- 重构 351 行 API 调用逻辑
+- 新增 Earn 相关 API 封装
+- 改进错误处理和 fallback 策略
+
+**Frontend Demo — 风险结果卡片 (`src/components/RiskResultCard.tsx`)**
+- 新增 `cached` 字段展示（缓存命中标识）
+
+**Frontend Demo — 类型定义 (`src/types/index.ts`)**
+- 新增 136 行类型定义
+- 覆盖 Earn、Composer、Behavior 相关数据结构
+
+**Backend — app.ts 增强**
+- 新增环境变量加载逻辑
+- 路由注册扩展
+
+**Backend — 环境变量新增 (`.env.example`)**
+```
+EARN_DATA_API_BASE_URL=https://earn.li.fi
+COMPOSER_API_BASE_URL=https://li.quest
+COMPOSER_API_KEY=
+BEHAVIOR_THRESHOLD_MEDIUM=30
+BEHAVIOR_THRESHOLD_HIGH=60
+BEHAVIOR_MAX_CHECKS_24H=20
+BEHAVIOR_MAX_CHECKS_7D=80
+...
+```
+
+**测试 (`backend/tests/unit/behavior-analyzer.test.ts`)**
+- 新增 107 行行为分析单元测试
+- 覆盖 velocity、chain novelty、amount spike、decision drift 四类异常
+
+**测试 (`backend/tests/unit/validator.test.ts`)**
+- 新增 vault/portfolio 验证器测试用例
+
+**测试 (`backend/tests/integration/api.test.ts`)**
+- 新增 API 集成测试 113 行
+
+### 新增 API 端点
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/earn/vaults` | 代理 vault 发现 |
+| GET | `/api/v1/earn/vault/:network/:address` | 代理 vault 详情 |
+| GET | `/api/v1/earn/portfolio/:wallet` | 代理钱包持仓 |
+| GET | `/api/v1/composer/quote` | AML-gated Composer 报价 |
+| GET | `/api/v1/behavior/profile/:wallet` | 钱包行为画像 |
+
+### 构建验证
+| 子项目 | `npm run build` | `npm test` |
+|--------|-----------------|------------|
+| Backend | ✅ 通过 | ✅ 104/104 |
+| Frontend Demo | ✅ 通过 | — |
+| Frontend Admin | ✅ 通过 | — |
+
+---
+
 ## 2026-04-10 — v0.0.4 新增 @bridgeshield/sdk 包
 
 ### 概述
