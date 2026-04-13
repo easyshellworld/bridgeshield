@@ -85,6 +85,8 @@ const buildTransferQueryString = (
   return searchParams.toString();
 };
 
+export { normalizeAppeal, normalizeWhitelistEntry, buildTransferQueryString };
+
 export const adminApi = {
   login: (username: string, password: string) =>
     apiFetch<AdminLoginResponse>('/api/v1/admin/auth/login', {

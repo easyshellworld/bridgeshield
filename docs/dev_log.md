@@ -2,6 +2,58 @@
 
 ---
 
+## 2026-04-13 — v0.0.7 CI 修复 + SDK 类型补全 + 前端单元测试
+
+### 概述
+修复 CI 前端测试失败问题（前端项目无测试文件导致 `vitest` 报错），补全 SDK 类型定义以匹配后端完整响应字段，新增前端单元测试。
+
+### 变更内容
+
+**CI 配置修复 (`.github/workflows/ci.yml`)**
+- Frontend Demo 和 Frontend Admin 的 `npm test` 步骤添加条件检查
+- 使用 `ls src/**/*.test.{ts,tsx}` 检查项目内测试文件（避免匹配 node_modules）
+- 测试文件不存在时跳过测试而非报错退出
+
+**SDK 类型补全 (`packages/sdk/src/types.ts`)**
+- `CheckAddressResponse` 新增完整行为分析字段：
+  - `behavior?: BehaviorProfile` — 行为画像对象
+  - `behaviorEscalated?: boolean` — 行为分析是否升级风险
+  - `behaviorReason?: string` — 行为分析升级原因
+  - `baseDecision?: Action` — 行为调整前的原始决策
+- 新增 `BehaviorSignal` 和 `BehaviorProfile` 接口定义：
+  - `signals`, `lifiSignals` 风险信号数组
+  - `metrics` 包含 velocity、chainNovelty、amountSpike、decisionDrift、lifiHistoryFallback 等指标
+  - LI.FI 增强字段：`lifiScore`、`lifiConfidence`、`lifiHistory`、`lifiCrossChainTumbling` 等
+
+**SDK 与后端兼容性验证**
+- 后端 `check.ts` 返回字段全部已在 SDK 类型中覆盖
+- 认证方式兼容：后端接受 `Authorization: Bearer <apiKey>` 和 `X-API-Key` 两种格式
+
+**Frontend Demo 单元测试 (`frontend-demo/src/__tests__/api/bridgeshield.test.ts`)**
+- 19 个测试用例覆盖 API 函数：
+  - `transformCheckResult()` — 后端响应转换逻辑
+  - `buildQueryString()` — 查询字符串构建
+  - `readErrorMessage()` — 错误消息提取
+  - `isRecord()` — 类型守卫函数
+
+**Frontend Admin 单元测试**
+- `frontend-admin/src/__tests__/api/admin-api.test.ts` — 10 个测试用例
+  - `normalizeAppeal()` — 申诉数据归一化
+  - `normalizeWhitelistEntry()` — 白名单条目归一化
+  - `buildTransferQueryString()` — 转账查询字符串构建
+- `frontend-admin/src/__tests__/auth/session.test.ts` — 9 个测试用例
+  - Session 管理函数：`getAdminAccessToken`, `getAdminUser`, `saveAdminSession`, `clearAdminSession`, `isAdminAuthenticated`
+
+### 构建验证
+| 子项目 | `npm run build` | `npm test` |
+|--------|-----------------|------------|
+| Backend | ✅ 通过 | ✅ 138/138 |
+| Frontend Demo | ✅ 通过 | ✅ 19/19 |
+| Frontend Admin | ✅ 通过 | ✅ 19/19 |
+| SDK | ✅ 通过 | ✅ 21/21 |
+
+---
+
 ## 2026-04-12 — v0.0.6 LI.FI Analytics 交易历史集成
 
 ### 概述

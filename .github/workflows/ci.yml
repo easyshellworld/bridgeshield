@@ -53,7 +53,9 @@ jobs:
 
       - run: npm ci
       - run: npm run build
-      - run: npm test
+      - name: Run tests (if test files exist)
+        run: |
+          if ls src/**/*.test.{ts,tsx} 2>/dev/null | head -1 | grep -q .; then npm test; else echo "No test files found, skipping tests"; fi
 
   frontend-admin:
     name: Frontend Admin — Build & Test
@@ -73,7 +75,9 @@ jobs:
 
       - run: npm ci
       - run: npm run build
-      - run: npm test
+      - name: Run tests (if test files exist)
+        run: |
+          if ls src/**/*.test.{ts,tsx} 2>/dev/null | head -1 | grep -q .; then npm test; else echo "No test files found, skipping tests"; fi
 
   sdk:
     name: SDK — Build & Test

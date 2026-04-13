@@ -21,7 +21,7 @@ const createTimeoutSignal = (timeoutMs: number) => {
   return controller.signal;
 };
 
-const buildQueryString = (params: Record<string, string | number | boolean | undefined>): string => {
+export const buildQueryString = (params: Record<string, string | number | boolean | undefined>): string => {
   const query = new URLSearchParams();
 
   for (const [key, value] of Object.entries(params)) {
@@ -32,10 +32,10 @@ const buildQueryString = (params: Record<string, string | number | boolean | und
   return query.toString();
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
-const readErrorMessage = (payload: unknown, fallback: string): string => {
+export const readErrorMessage = (payload: unknown, fallback: string): string => {
   if (isRecord(payload) && typeof payload.message === 'string') {
     return payload.message;
   }
@@ -47,7 +47,7 @@ const readErrorMessage = (payload: unknown, fallback: string): string => {
   return fallback;
 };
 
-function transformCheckResult(backendResponse: any): AMLCheckResult {
+export function transformCheckResult(backendResponse: any): AMLCheckResult {
   let riskFactors: string[] = [];
   if (backendResponse.isWhitelisted) {
     riskFactors = ['Whitelisted address'];
