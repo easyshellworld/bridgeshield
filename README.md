@@ -16,7 +16,7 @@
 [![Vitest](https://img.shields.io/badge/Vitest-1.x-6B9DF8?logo=vitest)](https://vitest.io/)
 
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?logo=githubactions)](https://github.com/easyshellworld/bridgeshield/actions)
-[![Tests](https://img.shields.io/badge/tests-88%20%2B%2021-brightgreen)](https://github.com/easyshellworld/bridgeshield/actions)
+[![Tests](https://img.shields.io/badge/tests-138%20%2B%2021%20%2B%2038-brightgreen)](https://github.com/easyshellworld/bridgeshield/actions)
 [![Docker Ready](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](https://www.docker.com/)
 
 BridgeShield is an Anti-Money Laundering (AML) compliance gateway designed specifically for cross-chain trading platforms like LI.FI. It provides real-time risk assessment, transaction monitoring, and regulatory compliance for decentralized finance (DeFi) transactions.
@@ -304,17 +304,24 @@ Address Check → [LI.FI Analytics History] + [Local checkLog] → Enhanced Beha
 
 ## 🧪 Testing
 
-### Backend Tests
+### Backend Tests (138 tests)
 ```bash
 cd backend
-npm test           # Run all tests (88 tests)
+npm test           # Run all tests (138 tests)
 ```
 
-### SDK Tests
+### SDK Tests (21 tests)
 ```bash
 cd packages/sdk
 npm test           # Run SDK tests (21 tests)
 ```
+
+### Frontend Tests (38 tests)
+```bash
+cd frontend-demo && npm test     # 19 tests
+cd frontend-admin && npm test    # 19 tests
+```
+> **Note:** Frontend tests are skipped in CI. Run locally for development.
 
 ### Frontend Builds
 ```bash
