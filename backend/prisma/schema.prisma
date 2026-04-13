@@ -86,3 +86,31 @@ model AuditLog {
 
   @@map("audit_logs")
 }
+
+model AdminUser {
+  id          String   @id @default(cuid())
+  username    String   @unique
+  passwordHash String
+  role        String   @default("ADMIN")
+  isActive    Boolean  @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("admin_users")
+}
+
+model ApiCredential {
+  id          String   @id @default(cuid())
+  name        String
+  keyHash     String   @unique
+  keyPrefix   String
+  scopes      String?  // JSON string array for SQLite
+  isActive    Boolean  @default(true)
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("api_credentials")
+}

@@ -9,6 +9,10 @@ services:
       - NODE_ENV=development
       - DATABASE_URL=file:./dev.db
       - LOG_LEVEL=debug
+      - JWT_SECRET=bridgeshield-docker-dev-jwt-secret
+      - ADMIN_INIT_USERNAME=admin
+      - ADMIN_INIT_PASSWORD=admin-password
+      - DEMO_API_KEY=bridgeshield-demo-key
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -22,7 +26,8 @@ services:
       - ./frontend-demo:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:3000
+      - VITE_API_BASE_URL=http://localhost:3000
+      - VITE_API_KEY=bridgeshield-demo-key
     command: npm run dev
 
   frontend-admin:
@@ -33,5 +38,5 @@ services:
       - ./frontend-admin:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:3000
+      - VITE_API_BASE_URL=http://localhost:3000
     command: npm run dev

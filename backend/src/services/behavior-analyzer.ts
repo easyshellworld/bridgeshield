@@ -1,6 +1,7 @@
 import { PrismaService } from '../db/prisma-client';
 import { logger } from '../api/middleware/logger';
 import { ValidationError, validateAddress } from '../api/middleware/validator';
+import { Transfer } from './analytics-service';
 
 export interface BehaviorAnalysisInput {
   address: string;
@@ -30,13 +31,16 @@ export interface BehaviorProfile {
     maxAmount7d?: number;
     amountSpikeRatio?: number;
     recentRiskDecisionRatio: number;
+    lifiHistoryFallback?: boolean;
   };
   adjustments: {
     velocity: number;
     chainNovelty: number;
     amount: number;
     decisionDrift: number;
+    lifiSignals: number;
   };
+  lifiSignals?: string[];
   recommendation: string;
   asOf: string;
 }
@@ -125,7 +129,8 @@ export class BehaviorAnalyzerService {
   public calculateProfile(
     input: BehaviorAnalysisInput,
     history: BehaviorHistorySample[],
-    now: Date = new Date()
+    now: Date = new Date(),
+    lifiHistory?: Transfer[]
   ): BehaviorProfile {
     const since24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const checks24h = history.filter((item) => item.createdAt >= since24h).length;
@@ -150,12 +155,71 @@ export class BehaviorAnalyzerService {
     const recentRiskDecisionRatio = recentWindow.length > 0 ? riskyDecisions / recentWindow.length : 0;
 
     const signals: string[] = [];
+    const lifiSignals: string[] = [];
     const adjustments = {
       velocity: 0,
       chainNovelty: 0,
       amount: 0,
-      decisionDrift: 0
+      decisionDrift: 0,
+      lifiSignals: 0
     };
+
+    let lifiHistoryFallback = false;
+
+    if (lifiHistory && lifiHistory.length > 0) {
+      const lifiAmounts = lifiHistory
+        .map(t => {
+          try {
+            return Number(t.amount) / 1e18;
+          } catch {
+            return 0;
+          }
+        })
+        .filter(v => v > 0);
+      const lifiAvgAmount = lifiAmounts.length > 0 ? lifiAmounts.reduce((a, b) => a + b, 0) / lifiAmounts.length : 0;
+      const lifiUniqueChains = new Set(lifiHistory.map(t => t.fromChain));
+      const lifiHighRiskInteractions = lifiHistory.filter(t => {
+        const toLower = t.toAddress?.toLowerCase();
+        return toLower === '0x098b716b8aaf21512996dc57eb0615e2383e2f96' ||
+               toLower === '0x0000000000000000000000000000000000000000';
+      });
+
+      if (lifiHighRiskInteractions.length > 0) {
+        adjustments.lifiSignals += 25;
+        lifiSignals.push(`LI.FI history: ${lifiHighRiskInteractions.length} interaction(s) with high-risk address`);
+      }
+
+      if (lifiUniqueChains.size >= 8) {
+        adjustments.lifiSignals += 8;
+        lifiSignals.push(`LI.FI: High chain diversity across ${lifiUniqueChains.size} chains`);
+      }
+
+      if (currentAmount && lifiAvgAmount > 0) {
+        const lifiSpikeRatio = currentAmount / lifiAvgAmount;
+        if (lifiSpikeRatio >= 10) {
+          adjustments.lifiSignals += 10;
+          lifiSignals.push(`LI.FI: Amount spike ${lifiSpikeRatio.toFixed(1)}x vs LI.FI historical average`);
+        }
+      }
+
+      if (lifiHistory.length === 1 && currentAmount && currentAmount >= 100000) {
+        adjustments.lifiSignals += 15;
+        lifiSignals.push('LI.FI: First LI.FI transaction is high-value');
+      }
+
+      if (lifiUniqueChains.size >= 5 && lifiAmounts.length >= 5) {
+        const allChains = lifiHistory.flatMap(t => [t.fromChain, t.toChain]);
+        const uniqueAllChains = new Set(allChains).size;
+        if (uniqueAllChains >= 5 && lifiAmounts.length >= 5) {
+          adjustments.lifiSignals += 12;
+          lifiSignals.push('LI.FI: Cross-chain activity across multiple chains detected');
+        }
+      }
+    } else if (lifiHistory !== undefined) {
+      lifiHistoryFallback = true;
+    }
+
+    signals.push(...lifiSignals);
 
     if (checks24h >= this.maxChecks24h) {
       adjustments.velocity += 22;
@@ -200,11 +264,12 @@ export class BehaviorAnalyzerService {
       signals.push(`Recent risk drift: ${(recentRiskDecisionRatio * 100).toFixed(0)}% non-ALLOW decisions`);
     }
 
-    const rawScore = adjustments.velocity + adjustments.chainNovelty + adjustments.amount + adjustments.decisionDrift;
+    const rawScore = adjustments.velocity + adjustments.chainNovelty + adjustments.amount + adjustments.decisionDrift + adjustments.lifiSignals;
     const score = Math.min(rawScore, 100);
 
     const confidence: 'LOW' | 'MEDIUM' | 'HIGH' =
-      checks7d >= 20 ? 'HIGH' : checks7d >= 6 ? 'MEDIUM' : 'LOW';
+      checks7d >= 20 || (lifiHistory && lifiHistory.length > 0) ? 'HIGH' :
+      checks7d >= 6 ? 'MEDIUM' : 'LOW';
 
     if (confidence === 'LOW' && signals.length > 0) {
       signals.push('Low confidence: limited historical data');
@@ -227,9 +292,11 @@ export class BehaviorAnalyzerService {
         avgAmount7d,
         maxAmount7d,
         amountSpikeRatio,
-        recentRiskDecisionRatio
+        recentRiskDecisionRatio,
+        lifiHistoryFallback
       },
       adjustments,
+      lifiSignals,
       recommendation,
       asOf: now.toISOString()
     };

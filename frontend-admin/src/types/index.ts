@@ -55,3 +55,38 @@ export interface RiskDistributionItem {
   value: number;
   color: string;
 }
+export interface TransferHistoryItem {
+  id: string;
+  fromAddress: string;
+  toAddress: string;
+  fromChain: number;
+  toChain: number;
+  amount: string;
+  amountUsd?: number;
+  status: string;
+  timestamp: string;
+  txHash?: string;
+  feeAmount?: string;
+  feeToken?: string;
+}
+
+export interface TransferHistoryResponse {
+  transfers: TransferHistoryItem[];
+  hasNext: boolean;
+  hasPrevious: boolean;
+  next: string | null;
+  previous: string | null;
+}
+
+export interface AdminSessionUser {
+  id: string;
+  username: string;
+  role: string;
+}
+
+export interface AdminLoginResponse {
+  accessToken: string;
+  tokenType: 'Bearer';
+  expiresIn: number;
+  user: AdminSessionUser;
+}

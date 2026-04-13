@@ -11,6 +11,39 @@ export interface CheckAddressParams {
   senderAddress?: string;
 }
 
+export interface BehaviorSignal {
+  type: string;
+  score: number;
+  description: string;
+}
+
+export interface BehaviorProfile {
+  address: string;
+  chainId?: number;
+  level: 'LOW' | 'MEDIUM' | 'HIGH' | 'UNKNOWN';
+  confidence: 'LOW' | 'MEDIUM' | 'HIGH';
+  signals: string[];
+  lifiSignals?: string[];
+  metrics: {
+    checkVelocity24h?: number;
+    checkVelocity7d?: number;
+    chainNovelty?: number;
+    amountSpike?: number;
+    decisionDrift?: number;
+    lifiHistoryFallback?: boolean;
+  };
+  lifiScore?: number;
+  lifiConfidence?: 'LOW' | 'MEDIUM' | 'HIGH';
+  lifiHistory?: unknown;
+  lifiReferencedAddresses?: number;
+  lifiFirstTransaction?: { amount: string; timestamp: string };
+  lifiCrossChainTumbling?: boolean;
+  lifiHighRiskInteraction?: boolean;
+  lifiAmountSpike?: boolean;
+  lifiHighChainDiversity?: boolean;
+  analyzedAt: string;
+}
+
 export interface CheckAddressResponse {
   checkId: string;
   address: string;
@@ -18,6 +51,7 @@ export interface CheckAddressResponse {
   riskScore: number;
   riskLevel: RiskLevel;
   decision: Action;
+  baseDecision?: Action;
   riskType?: string;
   factors?: {
     details?: string[];
@@ -29,6 +63,9 @@ export interface CheckAddressResponse {
   expiresAt?: string;
   fallback?: boolean;
   fallbackReason?: string;
+  behavior?: BehaviorProfile;
+  behaviorEscalated?: boolean;
+  behaviorReason?: string;
 }
 
 // Appeal params and response

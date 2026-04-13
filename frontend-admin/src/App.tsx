@@ -1,8 +1,11 @@
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import DashboardPage from './pages/DashboardPage';
 import AppealPage from './pages/AppealPage';
 import WhitelistPage from './pages/WhitelistPage';
 import LogsPage from './pages/LogsPage';
+import LoginPage from './pages/LoginPage';
+import { clearAdminSession, getAdminUser, isAdminAuthenticated } from './auth/session';
 import './index.css';
 
 const navigation = [
@@ -41,33 +44,86 @@ function Sidebar() {
   );
 }
 
-function Layout({ children }: { children: React.ReactNode }) {
+function Layout({ onLogout }: { onLogout: () => void }) {
+  const adminUser = useMemo(() => getAdminUser(), []);
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white border-b border-gray-200 px-8 py-4">
+        <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900">Admin Dashboard</h2>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-500">{adminUser?.username || 'admin'}</span>
+            <button
+              type="button"
+              onClick={onLogout}
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+            >
+              Logout
+            </button>
+          </div>
         </header>
         <main className="flex-1 overflow-y-auto bg-background p-8">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>
   );
 }
 
+function ProtectedLayout({
+  authenticated,
+  onLogout,
+}: {
+  authenticated: boolean;
+  onLogout: () => void;
+}) {
+  if (!authenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Layout onLogout={onLogout} />;
+}
+
 function App() {
+  const [authenticated, setAuthenticated] = useState<boolean>(isAdminAuthenticated());
+
   return (
     <Router>
-      <Layout>
-        <Routes>
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            authenticated ? (
+              <Navigate to="/" replace />
+            ) : (
+              <LoginPage
+                onLoginSuccess={() => {
+                  setAuthenticated(true);
+                }}
+              />
+            )
+          }
+        />
+        <Route
+          element={
+            <ProtectedLayout
+              authenticated={authenticated}
+              onLogout={() => {
+                clearAdminSession();
+                setAuthenticated(false);
+              }}
+            />
+          }
+        >
           <Route path="/" element={<DashboardPage />} />
           <Route path="/appeals" element={<AppealPage />} />
           <Route path="/whitelist" element={<WhitelistPage />} />
           <Route path="/logs" element={<LogsPage />} />
-        </Routes>
-      </Layout>
+        </Route>
+        <Route path="*" element={<Navigate to={authenticated ? '/' : '/login'} replace />} />
+      </Routes>
     </Router>
   );
 }

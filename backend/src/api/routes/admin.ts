@@ -302,6 +302,7 @@ router.post('/appeal/:id/approve', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const now = new Date();
+    const reviewer = req.auth?.admin?.username || 'admin';
     const appeal = await prismaService.getClient().$transaction(async (tx) => {
       const existingAppeal = await tx.appeal.findUnique({
         where: { id }
@@ -349,7 +350,7 @@ router.post('/appeal/:id/approve', async (req: Request, res: Response) => {
         data: {
           status: 'APPROVED',
           reviewedAt: now,
-          reviewer: 'admin',
+          reviewer,
           decision: 'APPROVED'
         }
       });
@@ -398,6 +399,7 @@ router.post('/appeal/:id/reject', async (req: Request, res: Response) => {
     const { id } = req.params;
     const { notes } = req.body;
     const now = new Date();
+    const reviewer = req.auth?.admin?.username || 'admin';
 
     const result = await prismaService.getClient().$transaction(async (tx) => {
       const existingAppeal = await tx.appeal.findUnique({
@@ -428,7 +430,7 @@ router.post('/appeal/:id/reject', async (req: Request, res: Response) => {
         data: {
           status: 'REJECTED',
           reviewedAt: now,
-          reviewer: 'admin',
+          reviewer,
           decision: 'REJECTED',
           notes: notes || null
         }

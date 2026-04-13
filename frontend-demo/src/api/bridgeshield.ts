@@ -5,12 +5,15 @@ import {
   EarnPortfolioResponse,
   EarnVaultDetailResponse,
   EarnVaultListResponse,
-  Stats
+  Stats,
+  TransferHistoryResponse
 } from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const API_KEY = import.meta.env.VITE_API_KEY || '';
 const TIMEOUT = 5000;
 
+const getAmlAuthHeaders = (): Record<string, string> => (API_KEY ? { 'X-API-Key': API_KEY } : {});
 // Helper to create abort signal with timeout
 const createTimeoutSignal = (timeoutMs: number) => {
   const controller = new AbortController();
@@ -18,7 +21,7 @@ const createTimeoutSignal = (timeoutMs: number) => {
   return controller.signal;
 };
 
-const buildQueryString = (params: Record<string, string | number | boolean | undefined>): string => {
+export const buildQueryString = (params: Record<string, string | number | boolean | undefined>): string => {
   const query = new URLSearchParams();
 
   for (const [key, value] of Object.entries(params)) {
@@ -29,10 +32,10 @@ const buildQueryString = (params: Record<string, string | number | boolean | und
   return query.toString();
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
-const readErrorMessage = (payload: unknown, fallback: string): string => {
+export const readErrorMessage = (payload: unknown, fallback: string): string => {
   if (isRecord(payload) && typeof payload.message === 'string') {
     return payload.message;
   }
@@ -44,7 +47,7 @@ const readErrorMessage = (payload: unknown, fallback: string): string => {
   return fallback;
 };
 
-function transformCheckResult(backendResponse: any): AMLCheckResult {
+export function transformCheckResult(backendResponse: any): AMLCheckResult {
   let riskFactors: string[] = [];
   if (backendResponse.isWhitelisted) {
     riskFactors = ['Whitelisted address'];
@@ -95,6 +98,7 @@ export const checkAddress = async (address: string, chainId: number = 1): Promis
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...getAmlAuthHeaders(),
       },
       body: JSON.stringify({ address, chainId }),
       signal,
@@ -125,7 +129,12 @@ export const checkAddress = async (address: string, chainId: number = 1): Promis
 
 export const getWhitelist = async () => {
   const signal = createTimeoutSignal(TIMEOUT);
-  const response = await fetch(`${BASE_URL}/api/v1/aml/whitelist`, { signal });
+  const response = await fetch(`${BASE_URL}/api/v1/aml/whitelist`, {
+    signal,
+    headers: {
+      ...getAmlAuthHeaders(),
+    },
+  });
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -144,7 +153,10 @@ export const submitAppeal = async (address: string, reason: string, contact: str
     const signal = createTimeoutSignal(TIMEOUT);
     const response = await fetch(`${BASE_URL}/api/v1/aml/appeal`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAmlAuthHeaders(),
+      },
       body: JSON.stringify({ address, chainId: 1, reason, contact }),
       signal,
     });
@@ -308,4 +320,39 @@ export const buildCompliantComposerQuote = async (request: ComposerQuoteRequest)
   }
 
   return payload as ComposerQuoteResponse;
+};
+
+export interface TransferHistoryParams {
+  wallet: string;
+  status?: 'ALL' | 'PENDING' | 'DONE' | 'FAILED';
+  fromTime?: string;
+  toTime?: string;
+  limit?: number;
+  cursor?: string;
+}
+
+export const getTransferHistory = async (params: TransferHistoryParams): Promise<TransferHistoryResponse> => {
+  const signal = createTimeoutSignal(TIMEOUT);
+  const queryString = buildQueryString({
+    wallet: params.wallet,
+    status: params.status,
+    fromTime: params.fromTime,
+    toTime: params.toTime,
+    limit: params.limit,
+    cursor: params.cursor
+  });
+  
+  const response = await fetch(`${BASE_URL}/api/v1/analytics/transfers${queryString ? `?${queryString}` : ''}`, {
+    method: 'GET',
+    signal
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  
+  if (!response.ok) {
+    const message = (payload as { message?: string }).message || `Analytics API error: ${response.status}`;
+    throw new Error(message);
+  }
+
+  return payload as TransferHistoryResponse;
 };

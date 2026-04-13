@@ -16,7 +16,7 @@
 [![Vitest](https://img.shields.io/badge/Vitest-1.x-6B9DF8?logo=vitest)](https://vitest.io/)
 
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?logo=githubactions)](https://github.com/easyshellworld/bridgeshield/actions)
-[![Tests](https://img.shields.io/badge/tests-88%20%2B%2021-brightgreen)](https://github.com/easyshellworld/bridgeshield/actions)
+[![Tests](https://img.shields.io/badge/tests-138%20%2B%2021%20%2B%2038-brightgreen)](https://github.com/easyshellworld/bridgeshield/actions)
 [![Docker Ready](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](https://www.docker.com/)
 
 BridgeShield is an Anti-Money Laundering (AML) compliance gateway designed specifically for cross-chain trading platforms like LI.FI. It provides real-time risk assessment, transaction monitoring, and regulatory compliance for decentralized finance (DeFi) transactions.
@@ -91,6 +91,7 @@ import { BridgeShieldClient } from '@bridgeshield/sdk';
 
 const client = new BridgeShieldClient({
   baseUrl: 'https://api.bridgeshield.io',
+  apiKey: process.env.BRIDGESHIELD_API_KEY,
 });
 
 const result = await client.checkAddress({
@@ -228,15 +229,17 @@ bridgeshield/
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/v1/health` | Health check with service status |
-| POST | `/api/v1/aml/check` | Check address risk score |
-| GET | `/api/v1/aml/whitelist` | Get whitelist summary |
-| POST | `/api/v1/aml/appeal` | Submit appeal for flagged address |
-| GET | `/api/v1/aml/appeal/status/:ticketId` | Check appeal status |
+| POST | `/api/v1/aml/check` | Check address risk score (**API Key required**) |
+| GET | `/api/v1/aml/whitelist` | Get whitelist summary (**API Key required**) |
+| POST | `/api/v1/aml/appeal` | Submit appeal for flagged address (**API Key required**) |
+| GET | `/api/v1/aml/appeal/status/:ticketId` | Check appeal status (**API Key required**) |
 
 ### Admin API (Port 3000)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| POST | `/api/v1/admin/auth/login` | Admin login (username/password -> JWT) |
+| GET | `/api/v1/admin/auth/me` | Get current admin session |
 | GET | `/api/v1/admin/dashboard/stats` | Dashboard statistics |
 | GET | `/api/v1/admin/dashboard/risk-trend` | 7-day risk trend |
 | GET | `/api/v1/admin/dashboard/risk-distribution` | Risk level distribution |
@@ -257,6 +260,23 @@ bridgeshield/
 | GET | `/api/v1/earn/portfolio/:wallet` | Proxy wallet portfolio positions |
 | GET | `/api/v1/composer/quote` | AML-gated Composer quote (`BLOCK`/`REVIEW`/`ALLOW`) |
 | GET | `/api/v1/behavior/profile/:wallet` | C-end wallet behavior profile and anomaly signals |
+| GET | `/api/v1/analytics/transfers` | LI.FI cross-chain transaction history for investigation |
+
+### LI.FI Analytics Integration
+
+BridgeShield enhances AML decision-making by integrating **LI.FI Analytics API** for cross-chain transaction history:
+
+```
+Address Check → [LI.FI Analytics History] + [Local checkLog] → Enhanced Behavior Analysis → AML Decision
+```
+
+**Enhanced Risk Signals from LI.FI:**
+- **High-risk address interactions** — Detects if the address has transacted with known mixer/sanctioned addresses
+- **Cross-chain tumbling patterns** — Identifies suspicious chain-hopping behavior
+- **Amount spike detection** — Compares current transaction against LI.FI historical averages
+- **First-time LI.FI user high-value detection** — Flags new addresses with large transactions
+
+**Combined Confidence:** When both local BridgeShield history and LI.FI history are available, behavior analysis confidence increases to HIGH.
 
 ## 🛡️ Features
 
@@ -265,7 +285,10 @@ bridgeshield/
 - **Real-time Scoring:** Risk score 0-100 with HIGH/MEDIUM/LOW classification
 - **Risk Factors:** Detailed breakdown of risk indicators
 - **Caching:** Multi-tier in-memory caching with TTL
-- **Behavior Analytics:** C-end behavior anomaly detection (velocity, chain novelty, amount spikes, decision drift)
+- **Behavior Analytics:** C-end behavior anomaly detection enhanced with LI.FI cross-chain history
+  - Local checkLog history for BridgeShield-observed transactions
+  - LI.FI Analytics API for complete cross-chain transaction history
+  - Combined signals: velocity, chain novelty, amount spikes, decision drift, high-risk interactions
 
 ### Compliance Tools
 - **Appeal System:** Users can contest flagged addresses
@@ -281,17 +304,24 @@ bridgeshield/
 
 ## 🧪 Testing
 
-### Backend Tests
+### Backend Tests (138 tests)
 ```bash
 cd backend
-npm test           # Run all tests (88 tests)
+npm test           # Run all tests (138 tests)
 ```
 
-### SDK Tests
+### SDK Tests (21 tests)
 ```bash
 cd packages/sdk
 npm test           # Run SDK tests (21 tests)
 ```
+
+### Frontend Tests (38 tests)
+```bash
+cd frontend-demo && npm test     # 19 tests
+cd frontend-admin && npm test    # 19 tests
+```
+> **Note:** Frontend tests are skipped in CI. Run locally for development.
 
 ### Frontend Builds
 ```bash
@@ -337,13 +367,19 @@ docker-compose logs -f backend
 - `DATABASE_URL`: SQLite/PostgreSQL connection string
 - `LOG_LEVEL`: Logging level (debug, info, warn, error)
 - `EARN_DATA_API_BASE_URL`: Earn Data API base URL (default: `https://earn.li.fi`)
-- `COMPOSER_API_BASE_URL`: Composer API base URL (default: `https://li.quest`)
+- `LI_FI_API_BASE_URL`: LI.FI API base URL (Composer + Analytics, default: `https://li.quest`)
 - `COMPOSER_API_KEY`: LI.FI Partner Portal API key (required for Composer quote route)
 - `BEHAVIOR_*`: Thresholds for C-end behavior risk model (velocity, amount spikes, decision drift)
+- `JWT_SECRET`: JWT signing secret for admin tokens
+- `ADMIN_INIT_USERNAME`: Initial admin username bootstrap
+- `ADMIN_INIT_PASSWORD`: Initial admin password bootstrap
+- `DEMO_API_KEY`: Fixed API key for demo/integration environments
 
 ### Security Features
 - Rate limiting on public endpoints
 - Input validation on all endpoints
+- JWT authentication for admin routes
+- API key authentication for AML/admin protected routes
 - Helmet security headers
 - CORS configuration
 - Parameterized queries (Prisma)

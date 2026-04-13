@@ -9,6 +9,10 @@ services:
       - NODE_ENV=development
       - DATABASE_URL=file:./dev.db
       - LOG_LEVEL=info
+      - JWT_SECRET=bridgeshield-docker-jwt-secret-change-me
+      - ADMIN_INIT_USERNAME=admin
+      - ADMIN_INIT_PASSWORD=admin-password
+      - DEMO_API_KEY=bridgeshield-demo-key
     volumes:
       - ./backend/data:/app/data
     restart: unless-stopped

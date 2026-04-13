@@ -254,11 +254,82 @@ export const earnPortfolioValidator = (req: Request, res: Response, next: NextFu
   next();
 };
 
+export const validateAnalyticsTransfersInput = (req: Request): ValidationErrorItem[] => {
+  const errors: ValidationErrorItem[] = [];
+  
+  const wallet = getSingleQueryValue(req.query.wallet);
+  const fromChainStr = getSingleQueryValue(req.query.fromChain);
+  const toChainStr = getSingleQueryValue(req.query.toChain);
+  const fromTime = getSingleQueryValue(req.query.fromTime);
+  const toTime = getSingleQueryValue(req.query.toTime);
+  const limitStr = getSingleQueryValue(req.query.limit);
+
+  if (!wallet) {
+    errors.push({ field: 'wallet', message: 'Wallet address is required' });
+  } else if (!validateAddress(wallet)) {
+    errors.push({ field: 'wallet', message: 'Invalid wallet address format' });
+  }
+
+  if (fromChainStr) {
+    const fromChain = parseInt(fromChainStr, 10);
+    if (!validateChainId(fromChain)) {
+      errors.push({ field: 'fromChain', message: 'fromChain must be a positive integer' });
+    }
+  }
+
+  if (toChainStr) {
+    const toChain = parseInt(toChainStr, 10);
+    if (!validateChainId(toChain)) {
+      errors.push({ field: 'toChain', message: 'toChain must be a positive integer' });
+    }
+  }
+
+  if (fromTime) {
+    const fromTimestamp = Date.parse(fromTime);
+    if (isNaN(fromTimestamp)) {
+      errors.push({ field: 'fromTime', message: 'fromTime must be a valid ISO 8601 timestamp' });
+    }
+  }
+
+  if (toTime) {
+    const toTimestamp = Date.parse(toTime);
+    if (isNaN(toTimestamp)) {
+      errors.push({ field: 'toTime', message: 'toTime must be a valid ISO 8601 timestamp' });
+    }
+  }
+
+  if (limitStr) {
+    const limit = parseInt(limitStr, 10);
+    if (isNaN(limit) || limit <= 0) {
+      errors.push({ field: 'limit', message: 'limit must be a positive integer' });
+    } else if (limit > 100) {
+      errors.push({ field: 'limit', message: 'limit cannot exceed 100' });
+    }
+  }
+
+  return errors;
+};
+
 export const composerQuoteValidator = (req: Request, res: Response, next: NextFunction): void => {
   const errors = validateComposerQuoteInput(req);
 
   if (errors.length > 0) {
     logger.warn('Composer quote validation failed', { errors, query: req.query });
+    res.status(400).json({
+      error: 'Validation failed',
+      errors
+    });
+    return;
+  }
+
+  next();
+};
+
+export const analyticsTransfersValidator = (req: Request, res: Response, next: NextFunction): void => {
+  const errors = validateAnalyticsTransfersInput(req);
+
+  if (errors.length > 0) {
+    logger.warn('Analytics transfers validation failed', { errors, query: req.query });
     res.status(400).json({
       error: 'Validation failed',
       errors

@@ -27,3 +27,9 @@ frontend-demo/dist/
 frontend-admin/dist/
 
 *.tsbuildinfo
+
+
+
+docs/roadmap-priority.md
+
+docs/core_business_audit_report.md

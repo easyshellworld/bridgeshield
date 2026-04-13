@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend:
-    name: Backend — Build & Test
+    name: "Backend — Build & Test"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -36,7 +36,7 @@ jobs:
           LOG_LEVEL: error
 
   frontend-demo:
-    name: Frontend Demo — Build
+    name: "Frontend Demo — Build & Test"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -53,9 +53,11 @@ jobs:
 
       - run: npm ci
       - run: npm run build
+      - name: frontend tests
+        run: npm run test
 
   frontend-admin:
-    name: Frontend Admin — Build
+    name: "Frontend Admin — Build & Test"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -72,9 +74,11 @@ jobs:
 
       - run: npm ci
       - run: npm run build
+      - name: frontend tests
+        run:  npm run test
 
   sdk:
-    name: SDK — Build & Test
+    name: "SDK — Build & Test"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -92,3 +96,4 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
+

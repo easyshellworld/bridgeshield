@@ -8,7 +8,7 @@ import { logger } from '../middleware/logger';
 
 const router = Router();
 
-const COMPOSER_API_BASE_URL = process.env.COMPOSER_API_BASE_URL || 'https://li.quest';
+const LI_FI_API_BASE_URL = process.env.LI_FI_API_BASE_URL || process.env.COMPOSER_API_BASE_URL || 'https://li.quest';
 const COMPOSER_API_KEY = process.env.COMPOSER_API_KEY || '';
 
 const riskDataLoader = RiskDataLoader.getInstance();
@@ -179,7 +179,7 @@ router.get('/quote', checkRateLimiter, composerQuoteValidator, async (req: Reque
 
     const queryString = buildComposerQueryString(req.query);
     const quotePath = '/v1/quote';
-    const upstreamUrl = `${COMPOSER_API_BASE_URL}${quotePath}${queryString ? `?${queryString}` : ''}`;
+    const upstreamUrl = `${LI_FI_API_BASE_URL}${quotePath}${queryString ? `?${queryString}` : ''}`;
 
     const upstreamResponse = await fetch(upstreamUrl, {
       method: 'GET',
@@ -213,7 +213,7 @@ router.get('/quote', checkRateLimiter, composerQuoteValidator, async (req: Reque
       quote: upstreamBody,
       source: {
         method: 'GET',
-        composerApi: COMPOSER_API_BASE_URL,
+        lifiApi: LI_FI_API_BASE_URL,
         quotePath
       }
     });
