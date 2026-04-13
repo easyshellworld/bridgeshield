@@ -34,6 +34,7 @@ import { BridgeShieldClient } from '@bridgeshield/sdk';
 
 const client = new BridgeShieldClient({
   baseUrl: 'https://api.bridgeshield.io',
+  apiKey: process.env.BRIDGESHIELD_API_KEY,
 });
 
 const result = await client.checkAddress({
@@ -52,7 +53,7 @@ console.log(result.decision);  // 'ALLOW' | 'REVIEW' | 'BLOCK'
 ```typescript
 const client = new BridgeShieldClient({
   baseUrl: string;        // Required: API base URL
-  apiKey?: string;         // Optional: API key for authentication
+  apiKey?: string;         // API key for protected AML/admin endpoints
   timeout?: number;        // Optional: Request timeout in ms (default: 5000)
 });
 ```
@@ -300,7 +301,7 @@ Works with any modern browser that supports `fetch` API.
 
 ### API Keys
 
-For production use, you can set an API key:
+Protected AML/admin endpoints require an API key. Set it on client construction:
 
 ```typescript
 const client = new BridgeShieldClient({

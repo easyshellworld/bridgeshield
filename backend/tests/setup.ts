@@ -6,6 +6,10 @@ process.env.NODE_ENV = 'test';
 process.env.LOG_LEVEL = 'error';
 // Use the same dev.db to avoid PrismaClient singleton mismatch
 process.env.DATABASE_URL = 'file:./dev.db';
+process.env.JWT_SECRET = 'test-jwt-secret-for-bridgeshield';
+process.env.ADMIN_INIT_USERNAME = 'admin';
+process.env.ADMIN_INIT_PASSWORD = 'admin-password';
+process.env.DEMO_API_KEY = 'demo-test-api-key';
 
 beforeAll(async () => {
   // Ensure schema is pushed to dev.db

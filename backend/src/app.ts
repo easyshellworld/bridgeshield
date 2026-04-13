@@ -9,6 +9,8 @@ import { CacheService } from './services/cache-service';
 import { logger, requestLogger } from './api/middleware/logger';
 import { apiRateLimiter } from './api/middleware/rate-limiter';
 import { handleValidationError } from './api/middleware/validator';
+import { requireAdminAuth, requireApiKey } from './api/middleware/auth';
+import { AML_API_SCOPE, ensureInitialAdminUser } from './services/auth-service';
 
 import healthRouter from './api/routes/health';
 import checkRouter from './api/routes/check';
@@ -19,6 +21,7 @@ import earnRouter from './api/routes/earn';
 import composerRouter from './api/routes/composer';
 import behaviorRouter from './api/routes/behavior';
 import analyticsRouter from './api/routes/analytics';
+import adminAuthRouter from './api/routes/admin-auth';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,10 +41,11 @@ app.use(requestLogger);
 app.use(apiRateLimiter);
 
 app.use(`/api/${API_VERSION}/health`, healthRouter);
-app.use(`/api/${API_VERSION}/aml/check`, checkRouter);
-app.use(`/api/${API_VERSION}/aml/whitelist`, whitelistRouter);
-app.use(`/api/${API_VERSION}/aml/appeal`, appealRouter);
-app.use(`/api/${API_VERSION}/admin`, adminRouter);
+app.use(`/api/${API_VERSION}/aml/check`, requireApiKey(AML_API_SCOPE), checkRouter);
+app.use(`/api/${API_VERSION}/aml/whitelist`, requireApiKey(AML_API_SCOPE), whitelistRouter);
+app.use(`/api/${API_VERSION}/aml/appeal`, requireApiKey(AML_API_SCOPE), appealRouter);
+app.use(`/api/${API_VERSION}/admin/auth`, adminAuthRouter);
+app.use(`/api/${API_VERSION}/admin`, requireAdminAuth, adminRouter);
 app.use(`/api/${API_VERSION}/earn`, earnRouter);
 app.use(`/api/${API_VERSION}/composer`, composerRouter);
 app.use(`/api/${API_VERSION}/behavior`, behaviorRouter);
@@ -57,6 +61,7 @@ app.get('/', (req, res) => {
       check: `/api/${API_VERSION}/aml/check`,
       whitelist: `/api/${API_VERSION}/aml/whitelist`,
       appeal: `/api/${API_VERSION}/aml/appeal`,
+      adminLogin: `/api/${API_VERSION}/admin/auth/login`,
       earnVaults: `/api/${API_VERSION}/earn/vaults`,
       earnVaultDetail: `/api/${API_VERSION}/earn/vault/:network/:address`,
       earnPortfolio: `/api/${API_VERSION}/earn/portfolio/:wallet`,
@@ -98,6 +103,9 @@ async function initializeServices() {
     
     await prismaService.connect();
     logger.info('Database connected');
+
+    await ensureInitialAdminUser();
+    logger.info('Admin bootstrap checked');
     
     await riskDataLoader.initialize();
     logger.info('Risk data loaded');

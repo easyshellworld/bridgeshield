@@ -55,7 +55,6 @@ export interface RiskDistributionItem {
   value: number;
   color: string;
 }
-
 export interface TransferHistoryItem {
   id: string;
   fromAddress: string;
@@ -77,4 +76,17 @@ export interface TransferHistoryResponse {
   hasPrevious: boolean;
   next: string | null;
   previous: string | null;
+}
+
+export interface AdminSessionUser {
+  id: string;
+  username: string;
+  role: string;
+}
+
+export interface AdminLoginResponse {
+  accessToken: string;
+  tokenType: 'Bearer';
+  expiresIn: number;
+  user: AdminSessionUser;
 }

@@ -10,8 +10,10 @@ import {
 } from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const API_KEY = import.meta.env.VITE_API_KEY || '';
 const TIMEOUT = 5000;
 
+const getAmlAuthHeaders = (): Record<string, string> => (API_KEY ? { 'X-API-Key': API_KEY } : {});
 // Helper to create abort signal with timeout
 const createTimeoutSignal = (timeoutMs: number) => {
   const controller = new AbortController();
@@ -96,6 +98,7 @@ export const checkAddress = async (address: string, chainId: number = 1): Promis
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...getAmlAuthHeaders(),
       },
       body: JSON.stringify({ address, chainId }),
       signal,
@@ -126,7 +129,12 @@ export const checkAddress = async (address: string, chainId: number = 1): Promis
 
 export const getWhitelist = async () => {
   const signal = createTimeoutSignal(TIMEOUT);
-  const response = await fetch(`${BASE_URL}/api/v1/aml/whitelist`, { signal });
+  const response = await fetch(`${BASE_URL}/api/v1/aml/whitelist`, {
+    signal,
+    headers: {
+      ...getAmlAuthHeaders(),
+    },
+  });
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -145,7 +153,10 @@ export const submitAppeal = async (address: string, reason: string, contact: str
     const signal = createTimeoutSignal(TIMEOUT);
     const response = await fetch(`${BASE_URL}/api/v1/aml/appeal`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAmlAuthHeaders(),
+      },
       body: JSON.stringify({ address, chainId: 1, reason, contact }),
       signal,
     });

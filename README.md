@@ -91,6 +91,7 @@ import { BridgeShieldClient } from '@bridgeshield/sdk';
 
 const client = new BridgeShieldClient({
   baseUrl: 'https://api.bridgeshield.io',
+  apiKey: process.env.BRIDGESHIELD_API_KEY,
 });
 
 const result = await client.checkAddress({
@@ -228,15 +229,17 @@ bridgeshield/
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/v1/health` | Health check with service status |
-| POST | `/api/v1/aml/check` | Check address risk score |
-| GET | `/api/v1/aml/whitelist` | Get whitelist summary |
-| POST | `/api/v1/aml/appeal` | Submit appeal for flagged address |
-| GET | `/api/v1/aml/appeal/status/:ticketId` | Check appeal status |
+| POST | `/api/v1/aml/check` | Check address risk score (**API Key required**) |
+| GET | `/api/v1/aml/whitelist` | Get whitelist summary (**API Key required**) |
+| POST | `/api/v1/aml/appeal` | Submit appeal for flagged address (**API Key required**) |
+| GET | `/api/v1/aml/appeal/status/:ticketId` | Check appeal status (**API Key required**) |
 
 ### Admin API (Port 3000)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| POST | `/api/v1/admin/auth/login` | Admin login (username/password -> JWT) |
+| GET | `/api/v1/admin/auth/me` | Get current admin session |
 | GET | `/api/v1/admin/dashboard/stats` | Dashboard statistics |
 | GET | `/api/v1/admin/dashboard/risk-trend` | 7-day risk trend |
 | GET | `/api/v1/admin/dashboard/risk-distribution` | Risk level distribution |
@@ -360,10 +363,16 @@ docker-compose logs -f backend
 - `LI_FI_API_BASE_URL`: LI.FI API base URL (Composer + Analytics, default: `https://li.quest`)
 - `COMPOSER_API_KEY`: LI.FI Partner Portal API key (required for Composer quote route)
 - `BEHAVIOR_*`: Thresholds for C-end behavior risk model (velocity, amount spikes, decision drift)
+- `JWT_SECRET`: JWT signing secret for admin tokens
+- `ADMIN_INIT_USERNAME`: Initial admin username bootstrap
+- `ADMIN_INIT_PASSWORD`: Initial admin password bootstrap
+- `DEMO_API_KEY`: Fixed API key for demo/integration environments
 
 ### Security Features
 - Rate limiting on public endpoints
 - Input validation on all endpoints
+- JWT authentication for admin routes
+- API key authentication for AML/admin protected routes
 - Helmet security headers
 - CORS configuration
 - Parameterized queries (Prisma)
