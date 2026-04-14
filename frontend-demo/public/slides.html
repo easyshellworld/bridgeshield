@@ -1,676 +1,1211 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>BridgeShield · LI.FI 跨链 AML 合规网关</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #00D4AA;
-            --primary-light: #5ce6c4;
-            --primary-dim: rgba(0, 212, 170, 0.15);
-            --danger: #FF3B3B;
-            --warning: #FFB020;
-            --purple: #A78BFA;
-            --bg: #0A0E1A;
-            --bg2: #121826;
-            --bg3: #1A2235;
-            --border: rgba(0, 212, 170, 0.25);
-            --text: #F0F4FA;
-            --muted: #9CA3AF;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BridgeShield - AML Gateway</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#050505;--card:rgba(20,20,25,0.65);--border:rgba(255,255,255,0.06);
+    --fg:#f8f9fa;--muted:#9ca3af;
+    --primary:#00f2fe;--primary-dark:#005c40;
+    --accent1:#8a2be2; /* Purple */
+    --accent2:#ff0844; /* Pink */
+    --accent3:#4facfe; /* Blue */
+    --red:#ef4444;--red-bg:rgba(239,68,68,.15);--green-bg:rgba(0,242,254,.15);
+    --yellow:#f59e0b;--yellow-bg:rgba(245,158,11,.15);
+    --glow:0 0 60px rgba(138,43,226,.25);
+  }
+  html,body{width:100%;height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--fg);overflow:hidden}
+  
+  /* Global Background Base */
+  .deck{position:relative;width:100%;height:100%;background-color:var(--bg);}
+  
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:3rem 4rem;overflow:hidden;z-index:1;
+         background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important;}
+  .slide.active{display:flex;animation:fadeIn .8s cubic-bezier(0.16, 1, 0.3, 1)}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(30px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+  
+  /* Per-slide thematic background configurations with richer gradients */
+  .slide:nth-child(1) { background: linear-gradient(135deg, rgba(5,5,10,0.8), rgba(20,10,40,0.9)), url('https://images.unsplash.com/photo-1639322537228-f710d846310a?q=80&w=2000'); }
+  .slide:nth-child(2) { background: linear-gradient(135deg, rgba(20,5,10,0.85), rgba(40,5,15,0.95)), url('https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=2000'); }
+  .slide:nth-child(3) { background: linear-gradient(135deg, rgba(15,10,25,0.85), rgba(30,10,50,0.95)), url('https://images.unsplash.com/photo-1639762681485-074b7f4d4b65?q=80&w=2000'); }
+  .slide:nth-child(4) { background: linear-gradient(135deg, rgba(10,10,25,0.85), rgba(20,30,70,0.95)), url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2000'); }
+  .slide:nth-child(5) { background: linear-gradient(135deg, rgba(5,10,20,0.85), rgba(30,20,50,0.95)), url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000'); }
+  .slide:nth-child(6) { background: linear-gradient(135deg, rgba(5,15,25,0.85), rgba(15,30,50,0.95)), url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2000'); }
+  .slide:nth-child(7) { background: linear-gradient(135deg, rgba(10,25,20,0.85), rgba(15,45,30,0.95)), url('https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=2000'); }
+  .slide:nth-child(8) { background: linear-gradient(135deg, rgba(10,10,15,0.9), rgba(25,20,35,0.95)), url('https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2000'); }
+  .slide:nth-child(9) { background: linear-gradient(135deg, rgba(15,15,25,0.85), rgba(25,25,55,0.95)), url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=2000'); }
+  .slide:nth-child(10) { background: linear-gradient(135deg, rgba(25,15,10,0.85), rgba(60,25,15,0.95)), url('https://images.unsplash.com/photo-1506399558188-acca6f8cbf41?q=80&w=2000'); }
+  .slide:nth-child(11) { background: linear-gradient(135deg, rgba(20,15,25,0.85), rgba(50,20,60,0.95)), url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=2000'); }
+  .slide:nth-child(12) { background: linear-gradient(135deg, rgba(10,20,30,0.85), rgba(15,45,75,0.95)), url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2000'); }
+  .slide:nth-child(13) { background: linear-gradient(135deg, rgba(10,15,25,0.85), rgba(30,20,50,0.95)), url('https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=2000'); }
+  .slide:nth-child(14) { background: linear-gradient(135deg, rgba(15,15,15,0.9), rgba(30,25,35,0.95)), url('https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?q=80&w=2000'); }
+  .slide:nth-child(15) { background: linear-gradient(135deg, rgba(10,15,30,0.85), rgba(40,25,70,0.95)), url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000'); }
+  .slide:nth-child(16) { background: linear-gradient(135deg, rgba(20,10,30,0.85), rgba(60,15,55,0.95)), url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=2000'); }
+  .slide:nth-child(17) { background: linear-gradient(135deg, rgba(15,15,25,0.85), rgba(50,25,45,0.95)), url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2000'); }
+  .slide:nth-child(18) { background: linear-gradient(135deg, rgba(5,5,10,0.8), rgba(30,10,50,0.95)), url('https://images.unsplash.com/photo-1639322537228-f710d846310a?q=80&w=2000'); }
+  
+  /* Dynamic Aurora Glow */
+  .slide::after{content:'';position:absolute;top:30%;left:50%;transform:translate(-50%,-50%);width:700px;height:700px;border-radius:50%;opacity:.2;filter:blur(160px);background:linear-gradient(135deg, var(--accent1), var(--primary), var(--accent2));pointer-events:none;animation: pulseGlow 8s ease-in-out infinite alternate;}
+  @keyframes pulseGlow { 0% { transform: translate(-50%,-50%) scale(1); opacity: 0.15; } 100% { transform: translate(-50%,-50%) scale(1.15); opacity: 0.3; } }
+  
+  .content{position:relative;z-index:2;max-width:1000px;width:100%}
+  h1{font-size:clamp(3rem,7vw,5.5rem);font-weight:800;letter-spacing:-.04em;line-height:1.1;text-shadow: 0 8px 32px rgba(0,0,0,0.6)}
+  h2{font-size:clamp(2.2rem,4.5vw,3.6rem);font-weight:700;line-height:1.2;margin-bottom:0.5rem;text-shadow: 0 4px 20px rgba(0,0,0,0.6)}
+  
+  /* Vibrant Gradient Text */
+  .accent{background: linear-gradient(135deg, var(--primary), var(--accent3), var(--accent1));-webkit-background-clip: text;-webkit-text-fill-color: transparent;font-weight: 900;}
+  .danger{color:var(--red);text-shadow: 0 0 30px rgba(239,68,68,0.5)}
+  .sub{color:var(--muted);font-size:1.2rem;line-height:1.7;max-width:760px;font-weight: 300;}
+  
+  /* Modern Web3 Tags */
+  .tag{display:inline-block;padding:.4rem 1.4rem;border-radius:999px;border:1px solid rgba(138,43,226,0.4);color:#e2e8f0;font-size:.85rem;font-family:'Courier New',monospace;background:linear-gradient(135deg, rgba(0,242,254,0.1), rgba(138,43,226,0.1));backdrop-filter:blur(8px);box-shadow: 0 4px 12px rgba(0,0,0,0.2)}
+  .tag-row{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center}
+  
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:2rem}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem}
+  
+  /* Enhanced Glassmorphism Cards */
+  .box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:2rem;
+       backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+       box-shadow: 0 12px 40px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1);
+       transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);}
+  .box:hover {transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.2); border-color: rgba(138,43,226,0.3);}
+  .box-red{border-color:rgba(239,68,68,.3); background:rgba(239,68,68,0.04)}
+  .box-green{border-color:rgba(0,242,254,.3); background:rgba(0,242,254,0.04)}
+  
+  .mono{font-family:'Courier New',monospace}
+  .label{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-family:'Courier New',monospace}
+  .big-num{font-size:2rem;font-weight:700}
+  
+  .badge{display:inline-block;padding:.25rem .8rem;border-radius:999px;font-size:.75rem;font-weight:700}
+  .badge-block{background:var(--red);color:#fff}
+  .badge-allow{background:var(--primary);color:var(--bg)}
+  .badge-review{background:var(--yellow);color:var(--bg)}
+  
+  .badge-tag{font-size:.7rem;padding:.2rem .6rem;border-radius:999px;font-weight:600;letter-spacing:0.05em}
+  .badge-tag-red{background:var(--red-bg);color:var(--red)}
+  .badge-tag-green{background:var(--green-bg);color:var(--primary)}
+  .badge-tag-yellow{background:var(--yellow-bg);color:var(--yellow)}
+  
+  ul.check-list{list-style:none;padding:0}
+  ul.check-list li{padding:.4rem 0;display:flex;align-items:flex-start;gap:.6rem;color:var(--muted);font-size:1rem}
+  ul.check-list li svg{margin-top:0.2rem;flex-shrink:0;color:var(--primary)}
+  
+  .code-block{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.4rem;font-family:'Courier New',monospace;font-size:.9rem;overflow-x:auto;line-height:1.6;white-space:pre;text-align:left}
+  .code-block .kw{color:var(--accent1)}.code-block .str{color:var(--primary)}.code-block .fn{color:var(--yellow)}.code-block .red{color:var(--red)}
+  .code-block .cm{color:var(--muted)}
+  
+  .icon-box{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+  .icon-box-primary{background:linear-gradient(135deg, rgba(0,242,254,0.2), rgba(138,43,226,0.2));color:var(--primary);border:1px solid rgba(0,242,254,0.3)}
+  .icon-box-danger{background:var(--red-bg);color:var(--red)}
+  
+  .shield-icon{width:80px;height:80px;border-radius:20px;border:2px solid transparent;background: linear-gradient(var(--bg), var(--bg)) padding-box, linear-gradient(135deg, var(--primary), var(--accent1)) border-box;display:flex;align-items:center;justify-content:center;box-shadow:var(--glow);margin:0 auto}
+  .shield-icon svg{width:40px;height:40px;color:var(--primary)}
+  
+  /* Navigation */
+  .nav{position:fixed;bottom:1.5rem;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 2rem}
+  .page-num{font-family:'Courier New',monospace;font-size:.85rem;color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:.3rem .8rem;background:var(--bg)}
+  .nav-btns{display:flex;gap:.6rem;align-items:center}
+  .nav-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:var(--bg);color:var(--fg);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+  .nav-btn:hover:not(:disabled){background:linear-gradient(135deg, var(--primary), var(--accent1));color:var(--bg);border-color:transparent}
+  .nav-btn:disabled{opacity:.25;cursor:not-allowed}
+  
+  /* Language Toggle Button */
+  .lang-btn{
+    background: transparent; border: 1px solid var(--border); color: var(--fg);
+    padding: 0.4rem 1rem; border-radius: 999px; cursor: pointer;
+    font-family: 'Courier New', monospace; font-size: 0.85rem; font-weight: 600;
+    transition: all 0.2s; display: flex; align-items: center; gap: 0.4rem;
+  }
+  .lang-btn:hover{background:linear-gradient(135deg, var(--primary), var(--accent1)); color: var(--bg); border-color: transparent;}
+  
+  /* Bilingual Toggle Logic */
+  body.lang-zh .en { display: none !important; }
+  body.lang-en .zh { display: none !important; }
+  
+  .center{text-align:center}.mt1{margin-top:1rem}.mt2{margin-top:2rem}.mt3{margin-top:3rem}
+  .gap1{display:flex;flex-direction:column;gap:1rem}.gap2{display:flex;flex-direction:column;gap:1.5rem}
+  .row{display:flex;align-items:center;gap:.8rem}
+  
+  .flow-arrow{display:flex;align-items:center;justify-content:center;color:var(--muted)}
+  .flow-arrow svg{width:24px;height:24px}
+  
+  .table{width:100%;border-collapse:collapse;margin-top:1rem;font-size:0.95rem}
+  .table th,.table td{padding:1rem;text-align:left;border-bottom:1px solid var(--border)}
+  .table th{color:var(--muted);font-weight:600;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em}
+  .table tr:last-child td{border-bottom:none}
 
-        * { margin:0; padding:0; box-sizing:border-box; }
+  .team-row{display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;margin-top:1rem}
+  .team-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1.5rem;width:220px;text-align:center;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow: 0 8px 32px rgba(0,0,0,0.3);}
+  .team-card:hover{transform:translateY(-4px); border-color:rgba(138,43,226,0.3); box-shadow: 0 16px 40px rgba(0,0,0,0.4);}
+  .team-avatar{width:96px;height:96px;border-radius:50%;margin:0 auto 1rem;border:3px solid transparent;background-size:cover;background-position:center;background-repeat:no-repeat;box-shadow:var(--glow);background-image:linear-gradient(var(--bg), var(--bg)), linear-gradient(135deg, var(--primary), var(--accent1));background-origin:border-box;background-clip:content-box, border-box;}
 
-        body {
-            background: var(--bg);
-            font-family: "Noto Sans SC", sans-serif;
-            color: var(--text);
-            overflow-x: hidden;
-        }
-
-        /* slide shell */
-        .slide {
-            display: none;
-            width: 100vw;
-            min-height: 100vh;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 3rem 2rem 5rem;
-            position: relative;
-            overflow: hidden;
-        }
-        .slide.active { display: flex; }
-
-        .slide::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(ellipse 80% 60% at 15% 20%, rgba(0, 212, 170, 0.08) 0%, transparent 70%),
-                        radial-gradient(ellipse 60% 50% at 85% 80%, rgba(167, 139, 250, 0.06) 0%, transparent 70%);
-            pointer-events: none;
-        }
-        .slide::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: linear-gradient(rgba(0, 212, 170, 0.03) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(0, 212, 170, 0.03) 1px, transparent 1px);
-            background-size: 48px 48px;
-            pointer-events: none;
-        }
-
-        .slide-content {
-            max-width: 1200px;
-            width: 95%;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* typography */
-        h1 {
-            font-family: "Syne", sans-serif;
-            font-size: clamp(2.8rem, 5vw, 4.5rem);
-            font-weight: 800;
-            line-height: 1.1;
-            letter-spacing: -0.02em;
-            background: linear-gradient(135deg, #fff 0%, #a5f3e0 60%, var(--primary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 1.2rem;
-        }
-
-        h2 {
-            font-family: "Syne", sans-serif;
-            font-size: clamp(1.8rem, 3vw, 2.6rem);
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        h2::before {
-            content: '';
-            display: inline-block;
-            width: 6px;
-            height: 100%;
-            min-height: 2rem;
-            background: var(--primary);
-            border-radius: 3px;
-            flex-shrink: 0;
-        }
-
-        h3 {
-            font-family: "Syne", sans-serif;
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 0.6rem;
-        }
-
-        p, li {
-            font-size: 1.05rem;
-            color: var(--text);
-            line-height: 1.7;
-            margin-bottom: 0.8rem;
-        }
-
-        .sub {
-            font-size: 1.25rem;
-            color: var(--purple);
-            margin-bottom: 1.5rem;
-            font-weight: 400;
-        }
-
-        /* cards */
-        .cards {
-            display: grid;
-            gap: 1.2rem;
-            margin-top: 1.5rem;
-        }
-        .cards-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-        .cards-2 { grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); }
-        .cards-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-
-        .card {
-            background: var(--bg3);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 1.5rem;
-            transition: border-color 0.2s, transform 0.2s;
-        }
-        .card:hover { border-color: var(--primary); transform: translateY(-2px); }
-
-        .card-accent { border-left: 3px solid var(--primary); }
-        .card-green  { border-left: 3px solid var(--primary); }
-        .card-amber  { border-left: 3px solid var(--warning); }
-        .card-purple { border-left: 3px solid var(--purple); }
-
-        .tag {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.78rem;
-            font-weight: 600;
-            margin: 0.2rem;
-        }
-        .tag-primary { background: var(--primary-dim); color: var(--primary-light); border: 1px solid var(--border); }
-        .tag-green  { background: rgba(0,212,170,0.1); color: var(--primary); border: 1px solid rgba(0,212,170,0.25); }
-        .tag-amber  { background: rgba(255,176,32,0.1); color: var(--warning); border: 1px solid rgba(255,176,32,0.25); }
-        .tag-purple { background: rgba(167,139,250,0.1); color: var(--purple); border: 1px solid rgba(167,139,250,0.25); }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: var(--bg2);
-            border-radius: 16px;
-            overflow: hidden;
-            font-size: 0.92rem;
-            margin: 1rem 0;
-        }
-        th {
-            background: rgba(0, 212, 170, 0.2);
-            color: var(--primary-light);
-            font-weight: 700;
-            padding: 0.85rem 1rem;
-            text-align: left;
-            font-family: "Syne", sans-serif;
-        }
-        td {
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-            padding: 0.75rem 1rem;
-        }
-        .yes { color: var(--primary); font-weight: 700; }
-        .no  { color: #ff7b8c; }
-
-        .code-block {
-            background: #0a0f1c;
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 12px;
-            padding: 1rem 1.3rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.82rem;
-            color: #c9d1d9;
-            white-space: pre-wrap;
-            line-height: 1.6;
-            margin: 0.8rem 0;
-        }
-
-        .btn {
-            display: inline-block;
-            background: var(--primary);
-            color: #0A0E1A;
-            text-decoration: none;
-            font-family: "Syne", sans-serif;
-            font-weight: 700;
-            padding: 0.85rem 2.2rem;
-            border-radius: 50px;
-            font-size: 1.05rem;
-            margin: 1.5rem 0.75rem 0 0;
-            transition: 0.2s;
-            cursor: pointer;
-            border: none;
-        }
-        .btn-outline {
-            background: transparent;
-            border: 2px solid var(--primary);
-            color: var(--primary);
-        }
-        .btn:hover { filter: brightness(1.2); transform: translateY(-2px); }
-
-        /* navigation */
-        .navigation {
-            position: fixed;
-            bottom: 1.8rem;
-            right: 2rem;
-            display: flex;
-            gap: 0.75rem;
-            z-index: 200;
-        }
-        .nav-btn {
-            background: var(--primary);
-            color: #0A0E1A;
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            font-weight: 800;
-            font-size: 1.2rem;
-            box-shadow: 0 0 20px rgba(0, 212, 170, 0.4);
-            user-select: none;
-            transition: 0.2s;
-        }
-        .nav-btn:hover { background: #2eeac4; transform: scale(1.1); }
-
-        .slide-counter {
-            position: fixed;
-            bottom: 1.8rem;
-            left: 2rem;
-            background: rgba(10,14,26,0.85);
-            backdrop-filter: blur(8px);
-            padding: 0.4rem 1rem;
-            border-radius: 20px;
-            font-family: "Syne", sans-serif;
-            font-weight: 700;
-            font-size: 0.85rem;
-            color: var(--primary);
-            border: 1px solid var(--border);
-            z-index: 200;
-        }
-
-        @keyframes slideUp {
-            from { opacity:0; transform: translateY(28px); }
-            to   { opacity:1; transform: translateY(0); }
-        }
-        .fade-in { animation: slideUp 0.55s cubic-bezier(0.22,1,0.36,1) forwards; }
-
-        .split { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
-        @media (max-width: 820px) { .split { grid-template-columns: 1fr; } }
-
-        .arch-svg-container { background: var(--bg2); border-radius: 20px; padding: 1rem; border: 1px solid var(--border); }
-        .team-row { display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem; }
-        .team-card {
-            text-align: center;
-            background: var(--bg3);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 2rem;
-            width: 220px;
-        }
-        .team-card .avatar {
-            width: 100px; height: 100px; border-radius: 50%;
-            display: block;
-            margin: 0 auto 1rem;
-            border: 3px solid var(--primary);
-            background-size: cover;
-            background-position: center;
-        }
-        .stat-box {
-            text-align: center;
-            background: var(--bg3);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 1.5rem;
-        }
-        .stat-num {
-            font-family: "Syne", sans-serif;
-            font-size: 2.8rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--primary), var(--purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .quote {
-            background: var(--primary-dim);
-            border-left: 4px solid var(--primary);
-            border-radius: 0 14px 14px 0;
-            padding: 1.4rem 1.8rem;
-            font-style: italic;
-        }
-    </style>
+  .thanks-slide{align-items:center}
+  .thanks-title{display:flex;align-items:center;gap:1rem;justify-content:center}
+  .thanks-title-bar{width:6px;height:34px;border-radius:999px;background:linear-gradient(to bottom, var(--primary), var(--accent1));box-shadow:var(--glow)}
+  .thanks-title-text{font-size:clamp(2.3rem,5vw,3.4rem);font-weight:800;color:#fff;line-height:1;text-shadow: 0 4px 16px rgba(0,0,0,0.6)}
+  .thanks-sub{font-size:1.35rem;background:linear-gradient(135deg, #e2e8f0, var(--accent1));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:600}
+  .thanks-tags{display:flex;justify-content:center;gap:1.1rem;flex-wrap:wrap;margin-top:.4rem}
+  .thanks-tag{display:inline-flex;align-items:center;justify-content:center;padding:.45rem 1rem;border-radius:999px;font-size:.82rem;font-weight:700;border:1px solid transparent}
+  .thanks-tag-green{color:var(--primary);background:rgba(0,242,254,.08);border-color:rgba(0,242,254,.28)}
+  .thanks-tag-yellow{color:var(--yellow);background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.28)}
+  .thanks-tag-purple{color:var(--accent1);background:rgba(138,43,226,.1);border-color:rgba(138,43,226,.26)}
+  .thanks-actions{display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;margin-top:1.3rem}
+  .thanks-btn{min-width:160px;height:54px;padding:0 1.8rem;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:1rem;font-weight:800;transition:all .3s cubic-bezier(0.16,1,0.3,1)}
+  .thanks-btn-primary{background:linear-gradient(135deg, var(--primary), var(--accent3));color:var(--bg);box-shadow:0 8px 24px rgba(0,242,254,.25)}
+  .thanks-btn-primary:hover{filter:brightness(1.1);transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,242,254,.4)}
+  .thanks-btn-outline{background:transparent;color:var(--fg);border:2px solid transparent;background-image:linear-gradient(var(--bg),var(--bg)),linear-gradient(135deg,var(--primary),var(--accent1));background-origin:border-box;background-clip:padding-box,border-box}
+  .thanks-btn-outline:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(138,43,226,.2)}
+  
+  @media(max-width:768px){
+    .grid2,.grid3,.grid4{grid-template-columns:1fr}
+    .slide{padding:2rem 1.5rem}
+    .content{max-width:100%}
+  }
+</style>
 </head>
-<body>
+<body class="lang-zh">
+<div class="deck" id="deck">
 
-<!-- ════════════════ SLIDE 1: 封面 ════════════════ -->
-<section class="slide active" id="s1">
-    <div class="slide-content fade-in" style="text-align:center;">
-        <div style="margin-bottom:1.5rem;">
-            <svg width="80" height="80" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="40" fill="none" stroke="#00D4AA" stroke-width="2.5" stroke-dasharray="5 4" />
-                <circle cx="50" cy="50" r="22" fill="none" stroke="rgba(0,212,170,0.4)" stroke-width="1.5"/>
-                <polygon points="50,20 75,40 65,65 35,65 25,40" fill="#00D4AA" opacity="0.9"/>
-                <text x="50" y="58" font-family="Syne" font-weight="800" font-size="16" fill="#0A0E1A" text-anchor="middle">BS</text>
-            </svg>
-        </div>
-        <div style="font-family:'Syne',sans-serif; font-size:clamp(2.8rem,6vw,4.5rem); font-weight:900; letter-spacing:-0.03em; background:linear-gradient(135deg,#fff 0%,#a5f3e0 60%,#00D4AA 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">BridgeShield</div>
-        <div style="font-size:0.9rem; letter-spacing:3px; text-transform:uppercase; color:rgba(167,139,250,0.8); margin-bottom:2rem;">LI.FI 跨链 AML 合规网关 · 3行代码集成</div>
-        <div style="font-size:1.3rem; margin-bottom:2rem;"><span style="color:var(--primary);">拦截风险资金，在跨链第一秒</span></div>
-        <div style="font-size:0.95rem; color:var(--muted); margin-bottom:1.5rem;">面向 LI.FI 生态集成方：钱包商 · dApp · 交易聚合器 · 跨链协议</div>
-        <div style="display:flex; gap:1rem; flex-wrap:wrap; justify-content:center; margin-bottom:2.5rem;">
-            <span class="tag tag-primary">⛓ 前置拦截</span>
-            <span class="tag tag-green">⚡ &lt;100ms</span>
-            <span class="tag tag-amber">🛡️ 熔断保护</span>
-            <span class="tag tag-purple">📦 一键部署</span>
-        </div>
-        <div><span class="btn" onclick="window._nextSlide()">开始演示 →</span></div>
-        
-    </div>
-</section>
-
-<!-- ════════════════ SLIDE 2: 问题 ════════════════ -->
-<section class="slide" id="s2">
-    <div class="slide-content fade-in">
-        <p style="color:var(--primary); letter-spacing:4px; margin-bottom:1rem;">✦ 痛点 ✦</p>
-        <h2>跨链交易正成为洗钱重灾区</h2>
-        <div class="split">
-            <div>
-                <ul style="list-style:none; padding-left:0;">
-                    <li style="padding-left:0;">🔴 2025年跨链洗钱总额达 $218亿，同比增长 211% (Elliptic 2025)</li>
-                    <li style="padding-left:0;">🔴 朝鲜黑客占跨链非法资金的 12%，约 $26亿 (Chainalysis 2025)</li>
-                    <li style="padding-left:0;">🔴 33% 的复杂调查涉及 3 条以上区块链 (Elliptic 2025)</li>
-                    <li style="padding-left:0;">🔴 LI.FI 处理量超 $600亿，1000+ 合作伙伴，但缺少原生 AML 层</li>
-                </ul>
-                <div class="quote" style="margin-top:1.5rem;">“现有合规方案多为事后追踪，缺少跨链交易的前置实时筛查能力。”</div>
-            </div>
-            <div class="card card-accent">
-                <h3>LI.FI 专属痛点</h3>
-                <p>• 跨链多跳路由，传统工具无法追踪</p>
-                <p>• 交易执行前必须完成实时检查</p>
-                <p>• 头部合规方案年费 $50万-$200万，中小团队难以承担</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ════════════════ SLIDE 3: 解决方案 ════════════════ -->
-<section class="slide" id="s3">
-    <div class="slide-content fade-in">
-        <h2>BridgeShield — 入口级 AML 网关</h2>
-        <p class="sub">在资金进入 LI.FI 跨链网络前完成筛查，源头拦截</p>
-        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem;"><span class="tag tag-primary">MetaMask</span><span class="tag tag-primary">Phantom</span><span class="tag tag-primary">Rabby</span><span class="tag tag-green">600+ LI.FI 合作方</span></div>
-        <div class="cards cards-3">
-            <div class="card"><h3>🎯 实时风险评分</h3><p>0-100 分，融合 OFAC/UN/诈骗地址库，<100ms 响应</p></div>
-            <div class="card"><h3>📋 LI.FI 原生白名单</h3><p>自动同步官方安全地址，误判率 &lt;0.1%</p></div>
-            <div class="card"><h3>⚡ 3行代码集成</h3><div class="code-block" style="font-size:0.75rem;">import {BridgeShield} from '@bridgeshield/sdk';<br>const risk = await BridgeShield.check(address);</div></div>
-        </div>
-    </div>
-</section>
-
-<!-- ════════════════ SLIDE 4: 架构总览 (SVG) ════════════════ -->
-<section class="slide" id="s4">
-    <div class="slide-content fade-in">
-        <h2>系统架构 — 分层高可用</h2>
-        <div class="arch-svg-container">
-            <svg viewBox="0 0 900 420" style="width:100%; height:auto; background:#0f1420; border-radius:16px;">
-                <rect x="30" y="20" width="840" height="60" rx="8" fill="#1A2235" stroke="#00D4AA" stroke-width="1.5"/>
-                <text x="50" y="55" fill="#00D4AA" font-family="Syne" font-weight="bold">API 网关层</text>
-                <text x="200" y="55" fill="#ccc" font-size="13">风险检查 · 白名单 · 申诉 · 健康检查</text>
-                
-                <rect x="30" y="110" width="840" height="60" rx="8" fill="#1A2235" stroke="#A78BFA" stroke-width="1.5"/>
-                <text x="50" y="145" fill="#A78BFA" font-family="Syne" font-weight="bold">数据处理层</text>
-                <text x="200" y="145" fill="#ccc" font-size="13">AML规则引擎 · 风险评分计算器 · 熔断器(Opossum) · 缓存管理器</text>
-                
-                <rect x="30" y="200" width="400" height="60" rx="8" fill="#1A2235" stroke="#FFB020" stroke-width="1.5"/>
-                <text x="50" y="235" fill="#FFB020" font-family="Syne" font-weight="bold">数据存储层</text>
-                <text x="200" y="235" fill="#ccc" font-size="13">Redis 缓存 · PostgreSQL/SQLite</text>
-                
-                <rect x="470" y="200" width="400" height="60" rx="8" fill="#1A2235" stroke="#00D4AA" stroke-width="1.5"/>
-                <text x="490" y="235" fill="#00D4AA" font-family="Syne" font-weight="bold">监控运维层</text>
-                <text x="640" y="235" fill="#ccc" font-size="13">日志·指标·告警·备份</text>
-                
-                <line x1="450" y1="80" x2="450" y2="110" stroke="#00D4AA" stroke-width="2" marker-end="url(#arrow)"/>
-                <line x1="450" y1="170" x2="230" y2="200" stroke="#A78BFA" stroke-width="2"/>
-                <line x1="450" y1="170" x2="670" y2="200" stroke="#A78BFA" stroke-width="2"/>
-                <defs><marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00D4AA"/></marker></defs>
-                
-                <rect x="180" y="300" width="540" height="50" rx="20" fill="#0A0E1A" stroke="#00D4AA" stroke-dasharray="4"/>
-                <text x="450" y="330" text-anchor="middle" fill="#00D4AA" font-family="Syne">LI.FI SDK 集成 · 3行代码 · 5分钟部署</text>
-            </svg>
-        </div>
-        <div style="margin-top:1rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
-            <span class="tag tag-primary">Redis 分级TTL</span>
-            <span class="tag tag-green">PostgreSQL HA</span>
-            <span class="tag tag-amber">K8s / Docker</span>
-            <span class="tag tag-purple">Prometheus + Grafana</span>
-        </div>
-    </div>
-</section>
-
-<!-- ════════════════ SLIDE 5: 核心 API & 风险评分 ════════════════ -->
-<section class="slide" id="s5">
-    <div class="slide-content fade-in">
-        <h2>风险评分引擎 · API 端点</h2>
-        <div class="split">
-            <div>
-                <div class="code-block">POST /api/v1/aml/check
-{
-  "address": "0x...",
-  "chainId": 1,
-  "amount": "1.5"
-}
-→ { riskScore: 85, action: "BLOCK" }</div>
-                <div class="code-block">GET /api/v1/aml/whitelist
-POST /api/v1/aml/appeal</div>
-            </div>
-            <div>
-                <table>
-                    <tr><th>风险等级</th><th>分数</th><th>动作</th></tr>
-                    <tr><td>LOW</td><td>0-30</td><td class="yes">ALLOW</td></tr>
-                    <tr><td>MEDIUM</td><td>31-70</td><td class="warning">REVIEW</td></tr>
-                    <tr><td>HIGH</td><td>71-100</td><td class="no">BLOCK</td></tr>
-                </table>
-                <p>评分因子：OFAC(40) · UN/EU(35) · 诈骗地址(30) · 混币器(25) · 大额交易(20)</p>
-            </div>
-        </div>
-        <div class="card card-amber" style="margin-top:1rem;">
-            <strong>⚡ 熔断降级：</strong>第三方API失败率>50%时自动放行并记录，保证 LI.FI 永不中断。
-        </div>
-    </div>
-</section>
-
-<!-- ════════════════ SLIDE 6: 一键集成 ════════════════ -->
-<section class="slide" id="s6">
-    <div class="slide-content fade-in">
-        <h2>3行代码 · 一键部署</h2>
-        <div class="cards cards-2">
-            <div class="card">
-                <h3>📦 LI.FI SDK 集成</h3>
-                <div class="code-block">import { BridgeShield } from '@bridgeshield/sdk';
-BridgeShield.init({ apiKey });
-const risk = await BridgeShield.check(address);</div>
-                <p>已在 LI.FI 提交 PR，作为内置 AML Provider</p>
-            </div>
-            <div class="card">
-                <h3>🚀 Docker 一键启动</h3>
-                <div class="code-block">docker-compose up -d</div>
-                <p>包含 API + Redis + 监控，5分钟上线</p>
-                <span class="tag tag-green">Render 一键部署</span>
-                <span class="tag tag-primary">K8s Helm</span>
-            </div>
-        </div>
-        <div style="margin-top:1rem; text-align:center;">
-            <a href="https://github.com/easyshellworld/bridgeshield" class="btn" target="_blank">GitHub Repo</a>
-            <a href="https://bridgeshield-demo.netlify.app" class="btn btn-outline" target="_blank">Live Demo</a>
-        </div>
-    </div>
-</section>
-
-<!-- ════════════════ SLIDE: 项目概览 ════════════════ -->
-<section class="slide" id="s-badges">
-    <div class="slide-content fade-in">
-        <h2>项目概览 · Open Source</h2>
-        <p class="sub">完整开源，社区驱动，生产就绪</p>
-        <div style="background:var(--bg3); border:1px solid var(--border); border-radius:20px; padding:2rem; text-align:center;">
-            <div style="margin-bottom:1.5rem;">
-                <h3 style="margin-bottom:1rem;">项目状态</h3>
-                <a href="https://github.com/easyshellworld/bridgeshield/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License" style="margin:0.2rem;"></a>
-                <a href="https://github.com/easyshellworld/bridgeshield/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" style="margin:0.2rem;"></a>
-                <a href="https://github.com/easyshellworld/bridgeshield/stargazers"><img src="https://img.shields.io/github/stars/easyshellworld/bridgeshield?style=social" alt="Stars" style="margin:0.2rem;"></a>
-                <a href="https://github.com/easyshellworld/bridgeshield/issues"><img src="https://img.shields.io/github/issues/easyshellworld/bridgeshield" alt="Issues" style="margin:0.2rem;"></a>
-                <a href="https://github.com/easyshellworld/bridgeshield/pulls?q=is%3Apr+is%3Aclosed"><img src="https://img.shields.io/github/issues-pr-closed/easyshellworld/bridgeshield" alt="Closed PRs" style="margin:0.2rem;"></a>
-                <a href="https://github.com/easyshellworld/bridgeshield/commits/main"><img src="https://img.shields.io/github/last-commit/easyshellworld/bridgeshield" alt="Last Commit" style="margin:0.2rem;"></a>
-            </div>
-            <div style="margin-bottom:1.5rem;">
-                <h3 style="margin-bottom:1rem;">技术栈</h3>
-                <img src="https://img.shields.io/badge/Node.js-20+-339933?logo=node.js" alt="Node.js" style="margin:0.2rem;">
-                <img src="https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript" alt="TypeScript" style="margin:0.2rem;">
-                <img src="https://img.shields.io/badge/Express-4.x-000000?logo=express" alt="Express" style="margin:0.2rem;">
-                <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react" alt="React" style="margin:0.2rem;">
-                <img src="https://img.shields.io/badge/Tailwind_CSS-3.0+-06B6D4?logo=tailwindcss" alt="Tailwind" style="margin:0.2rem;">
-                <img src="https://img.shields.io/badge/Prisma-5.x-5A67D8?logo=prisma" alt="Prisma" style="margin:0.2rem;">
-                <img src="https://img.shields.io/badge/Vitest-1.x-6B9DF8?logo=vitest" alt="Vitest" style="margin:0.2rem;">
-            </div>
-            <div>
-                <h3 style="margin-bottom:1rem;">部署与测试</h3>
-                <img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?logo=githubactions" alt="CI/CD" style="margin:0.2rem;">
-                <img src="https://img.shields.io/badge/tests-88%20%2B%2021-brightgreen" alt="Tests" style="margin:0.2rem;">
-                <img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker" alt="Docker" style="margin:0.2rem;">
-            </div>
-        </div>
-        <div style="margin-top:1.5rem; text-align:center;">
-            <a href="https://github.com/easyshellworld/bridgeshield" class="btn" target="_blank">⭐ GitHub Repo</a>
-            <a href="https://bridgeshield-demo.netlify.app" class="btn btn-outline" target="_blank">🔗 Live Demo</a>
-        </div>
-    </div>
-</section>
-
-<!-- ════════════════ SLIDE 7: 技术栈与部署 ════════════════ -->
-<section class="slide" id="s7">
-    <div class="slide-content fade-in">
-        <h2>生产级技术栈</h2>
-        <div class="split">
-            <div>
-                <h3>后端 & 数据</h3>
-                <p>Node.js + TypeScript · Prisma ORM · PostgreSQL (生产) / SQLite (开发) · Redis 缓存 · Winston 日志</p>
-                <h3>前端仪表盘</h3>
-                <p>React + Vite + Tailwind · 实时风险监控 · 双语 i18n</p>
-            </div>
-            <div>
-                <h3>部署 & 运维</h3>
-                <p>Docker · Kubernetes · AWS ECS · GitHub Actions CI/CD · Prometheus + Grafana</p>
-                <div class="card card-purple">双数据库兼容，开发零配置，生产高可用。</div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ════════════════ SLIDE 8: 安全与熔断 ════════════════ -->
-<section class="slide" id="s8">
-    <div class="slide-content fade-in">
-        <h2>纵深安全 · 熔断优先</h2>
-        <div class="cards cards-3">
-            <div class="card"><h3>🔐 访问控制</h3>IP 白名单 · API 密钥轮换 · JWT · 速率限制</div>
-            <div class="card"><h3>🛡️ 熔断器 Opossum</h3>错误阈值50% → 自动降级放行，保障 LI.FI 可用性</div>
-            <div class="card"><h3>📊 全链路监控</h3>结构化日志 · 分布式追踪 Jaeger · 告警规则</div>
-        </div>
-        <div class="quote">“即使所有外部数据源宕机，BridgeShield 也会保持放行并告警，绝不阻塞合法交易。”</div>
-    </div>
-</section>
-
-<!-- ════════════════ SLIDE 9: 路线图 ════════════════ -->
-<section class="slide" id="s9">
-    <div class="slide-content fade-in">
-        <h2>实施路线图</h2>
-        <div class="timeline" style="position:relative; padding-left:2rem;">
-            <div style="position:absolute; left:0.5rem; top:0; bottom:0; width:2px; background:linear-gradient(to bottom, var(--primary), var(--purple));"></div>
-            <div style="margin-bottom:1.5rem; padding-left:1.5rem; position:relative;"><div style="position:absolute; left:-0.6rem; top:0.3rem; width:12px; height:12px; border-radius:50%; background:var(--primary);"></div><span class="tag tag-primary">Phase 1 · 已完成</span><div><strong>MVP Core</strong> — Risk screening API, OFAC/UN/EU sanctions check, whitelist system, circuit breaker, Docker deployment, 88+ unit tests</div></div>
-            <div style="margin-bottom:1.5rem; padding-left:1.5rem; position:relative;"><div style="position:absolute; left:-0.6rem; top:0.3rem; width:12px; height:12px; border-radius:50%; background:var(--primary);"></div><span class="tag tag-green">Phase 2 · 进行中</span><div><strong>Production Hardening</strong> — Admin dashboard, appeal workflow, PostgreSQL HA, enhanced risk scoring, SDK package (@bridgeshield/sdk)</div></div>
-            <div style="margin-bottom:1.5rem; padding-left:1.5rem; position:relative;"><div style="position:absolute; left:-0.6rem; top:0.3rem; width:12px; height:12px; border-radius:50%; background:var(--muted);"></div><span class="tag tag-amber">Phase 3 · 规划中</span><div><strong>Ecosystem Integration</strong> — Submit li.fi community plugin proposal, multi-chain risk data expansion, real-time monitoring dashboard, API rate-limiting & enterprise tiers</div></div>
-        </div>
-    </div>
-</section>
-
-<!-- ════════════════ SLIDE 10: 团队 ════════════════ -->
-<section class="slide" id="s10">
-    <div class="slide-content fade-in">
-        <h2 style="justify-content:center;">核心团队</h2>
-        <p style="text-align:center; color:var(--purple); margin-bottom:2rem;">来自Web3和AI领域的资深专家团队</p>
-        <div class="team-row">
-            <div class="team-card">
-                <div class="avatar" style="background: url('https://duk.tw/exYFkP.jpg') center/cover; font-size:0;"></div>
-                <h3>Alice</h3>
-                <p>Project Lead<br>Product Design</p>
-            </div>
-            <div class="team-card">
-                <div class="avatar" style="background: url('https://duk.tw/1TRNhx.jpg') center/cover; font-size:0;"></div>
-                <h3>Jack</h3>
-                <p>Frontend Engineer<br>UI Design</p>
-            </div>
-            <div class="team-card">
-                <div class="avatar" style="background: url('https://duk.tw/uha9iW.jpg') center/cover; font-size:0;"></div>
-                <h3>Taylor</h3>
-                <p>AI Engineer<br>Backend Engineer</p>
-            </div>
-            <div class="team-card">
-                <div class="avatar" style="background: url('https://duk.tw/Ni8GQw.jpg') center/cover; font-size:0;"></div>
-                <h3>Quentin</h3>
-                <p>Testing Engineer<br>DevOps Engineer</p>
-            </div>
-        </div>
-        <p style="text-align:center; margin-top:2rem; color:var(--muted);">BridgeShield · 让跨链更安全</p>
-    </div>
-</section>
-
-<!-- ════════════════ SLIDE 11: 致谢 ════════════════ -->
-<section class="slide" id="s11">
-    <div class="slide-content fade-in" style="text-align:center;">
-        <h2 style="justify-content:center;">Thank You</h2>
-        <p class="sub">BridgeShield — 入口即安全</p>
-        <div style="display:flex; justify-content:center; gap:2rem; margin:2rem 0; flex-wrap:wrap;">
-            <span class="tag tag-primary">3行代码集成</span>
-            <span class="tag tag-green">&lt;100ms</span>
-            <span class="tag tag-amber">LI.FI 原生</span>
-            <span class="tag tag-purple">Open Source</span>
-        </div>
-        <div style="margin-top:2rem;">
-            <a href="https://github.com/easyshellworld/bridgeshield" class="btn" target="_blank">GitHub</a>
-            <a href="https://bridgeshield-demo.netlify.app" class="btn btn-outline" target="_blank">Live Demo</a>
-        </div>
-       
-    </div>
-</section>
-
-<!-- Navigation -->
-<div class="navigation">
-    <div class="nav-btn" id="prev-btn">←</div>
-    <div class="nav-btn" id="next-btn">→</div>
+<!-- Slide 1: Cover -->
+<div class="slide active">
+<div class="content center gap2" style="align-items:center">
+  <div class="shield-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+  </div>
+  <h1>Bridge<span class="accent">Shield</span></h1>
+  <p class="sub" style="font-size:1.4rem;max-width:800px">
+    <span class="en">AML Compliance Gateway for LI.FI Cross-Chain Transactions</span>
+    <span class="zh">专为 LI.FI 跨链交易打造的 AML 合规网关</span>
+  </p>
+  <p style="font-size:1.6rem;font-weight:600;color:var(--primary);margin:1rem 0">
+    <span class="en">Intercept Risky Funds at the First Second of Cross-Chain</span>
+    <span class="zh">在跨链的第一秒拦截风险资金</span>
+  </p>
+  <div class="tag-row mt1">
+    <span class="tag">Pre-Intercept</span>
+    <span class="tag">&lt; 100ms</span>
+    <span class="tag">Circuit Breaker</span>
+    <span class="tag">3 Lines SDK</span>
+    <span class="tag">LI.FI Earn API</span>
+  </div>
+  <p class="sub mt2" style="font-size:0.9rem">DeFi Mullet Hackathon #1 - Tooling Track</p>
+  <div class="mt1" style="display:flex;gap:1rem">
+    <a href="http://localhost:5173" target="_blank" class="thanks-btn thanks-btn-outline" style="min-width:auto;height:44px;font-size:0.9rem;padding:0 1.4rem">
+      <span class="en">Launch Frontend Demo</span><span class="zh">打开前端演示</span>
+    </a>
+    <a href="http://localhost:5173/earn-flow" target="_blank" class="thanks-btn thanks-btn-primary" style="min-width:auto;height:44px;font-size:0.9rem;padding:0 1.4rem">
+      <span class="en">Earn Integration Demo</span><span class="zh">Earn 集成演示</span>
+    </a>
+  </div>
 </div>
-<div class="slide-counter" id="slide-counter">1 / 12</div>
+</div>
+
+<!-- Slide 2: Breaking News -->
+<div class="slide">
+<div class="content gap2">
+  <div class="row">
+    <svg viewBox="0 0 24 24" width="24" height="24" stroke="var(--red)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+    <span class="mono label" style="color:var(--red);font-size:.85rem">
+      <span class="en">BREAKING - APRIL 13, 2026</span>
+      <span class="zh">BREAKING - 2026年4月13日</span>
+    </span>
+  </div>
+  <h2>Hyperbridge <span class="danger"><span class="en">Attacked</span><span class="zh">遭到攻击</span></span></h2>
+  <p class="sub" style="max-width:100%">
+    <span class="en">Hackers exploited a cross-chain message verification vulnerability in Hyperbridge (Polkadot ecosystem), forging a message to seize admin permissions and minting <span class="danger" style="font-weight:700">1 billion bridged DOT</span> (~$1.19B nominal).</span>
+    <span class="zh">黑客利用了 Hyperbridge（Polkadot 生态）的跨链消息验证漏洞，伪造消息夺取管理员权限，并铸造了 <span class="danger" style="font-weight:700">10 亿枚跨链 DOT</span>（名义价值约 11.9 亿美元）。</span>
+  </p>
+  <div class="grid3 mt2">
+    <div class="box box-red">
+      <p class="label"><span class="en">Minted DOT</span><span class="zh">铸造的 DOT</span></p>
+      <p class="big-num mt1 danger">1,000,000,000</p>
+      <p style="color:var(--muted);font-size:.85rem;margin-top:.5rem"><span class="en">~$1.19B nominal value</span><span class="zh">约 $1.19B 名义价值</span></p>
+    </div>
+    <div class="box">
+      <p class="label"><span class="en">Actual Cashout</span><span class="zh">实际套现</span></p>
+      <p class="big-num mt1">108.2 ETH</p>
+      <p style="color:var(--muted);font-size:.85rem;margin-top:.5rem"><span class="en">~$237,000 via Uniswap V4</span><span class="zh">约 $237,000（通过 Uniswap V4）</span></p>
+    </div>
+    <div class="box">
+      <p class="label"><span class="en">Attack Vector</span><span class="zh">攻击向量 (Attack Vector)</span></p>
+      <p class="big-num mt1" style="font-size:1.5rem;line-height:1.3"><span class="en">Forged Msg</span><span class="zh">伪造消息</span></p>
+      <p style="color:var(--muted);font-size:.85rem;margin-top:.5rem"><span class="en">Merkle verification bypass</span><span class="zh">绕过 Merkle 验证</span></p>
+    </div>
+  </div>
+  <div class="box mt1" style="background:var(--red-bg);border:1px solid rgba(224,64,64,0.3)">
+    <p style="color:var(--fg);font-weight:600;display:flex;align-items:center;gap:0.5rem">
+      <svg viewBox="0 0 24 24" width="20" height="20" stroke="var(--red)" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <span class="en">Key Point: The attacker could use LI.FI to move these funds across chains for laundering.</span>
+      <span class="zh">核心痛点：攻击者完全可以使用 LI.FI 将这些资金跨链转移并洗钱。</span>
+    </p>
+  </div>
+</div>
+</div>
+
+<!-- Slide 3: The Problem -->
+<div class="slide">
+<div class="content gap2">
+  <h2>
+    <span class="en">Cross-chain Money Laundering: <span class="danger">$21.8B</span></span>
+    <span class="zh">跨链洗钱规模：<span class="danger">218亿美元</span></span>
+  </h2>
+  <p class="sub" style="max-width:100%">
+    <span class="en">Cross-chain laundering surged 211% in 2025. LI.FI processes $600B+ through 30+ bridges, 30+ chains, 1000+ partners - yet has <span class="accent" style="font-weight:600">no native AML layer</span>.</span>
+    <span class="zh">2025年跨链洗钱激增 211%。LI.FI 处理了超过 $600B 的资金，连接 30+ 跨链桥、30+ 条链、1000+ 合作伙伴 —— 然而它<span class="accent" style="font-weight:600">没有原生的 AML（反洗钱）层</span>。</span>
+  </p>
+  <div class="grid2 mt2">
+    <div class="box box-red gap1">
+      <div class="icon-box icon-box-danger">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+      </div>
+      <h3 style="font-size:1.3rem"><span class="en">Without BridgeShield</span><span class="zh">没有 BridgeShield</span></h3>
+      <ul class="check-list">
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--red)" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> <span class="en">Hacker addresses freely cross-chain</span><span class="zh">黑客地址可以自由跨链</span></li>
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--red)" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> <span class="en">Sanctioned mixer funds pass through</span><span class="zh">被制裁的混币器资金畅通无阻</span></li>
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--red)" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> <span class="en">Partners face compliance risk</span><span class="zh">合作伙伴面临严重的合规风险</span></li>
+      </ul>
+    </div>
+    <div class="box box-green gap1">
+      <div class="icon-box icon-box-primary">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <h3 style="font-size:1.3rem"><span class="en">With BridgeShield</span><span class="zh">集成 BridgeShield 后</span></h3>
+      <ul class="check-list">
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--primary)" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> <span class="en">Real-time address screening</span><span class="zh">执行前进行实时地址筛查</span></li>
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--primary)" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> <span class="en">OFAC + hacker + mixer detection</span><span class="zh">OFAC + 黑客 + 混币器多源检测</span></li>
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--primary)" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> <span class="en">Safe protocols never blocked</span><span class="zh">安全的协议和用户永远不会被拦截</span></li>
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--primary)" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> <span class="en">Full audit trail</span><span class="zh">提供完整的审计追踪</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Slide 4: What is BridgeShield? -->
+<div class="slide">
+<div class="content gap2">
+  <h2>
+    <span class="en">Not a User Product. <span class="accent">Infrastructure.</span></span>
+    <span class="zh">不是 C 端产品，而是<span class="accent">基础设施</span></span>
+  </h2>
+  <p class="sub" style="max-width:100%;font-size:1.2rem">
+    <span class="en">BridgeShield serves DeFi PLATFORMS, not end users.</span>
+    <span class="zh">BridgeShield 服务于 DeFi 平台，而非最终用户。</span>
+  </p>
+  <div class="box mt1" style="background:var(--green-bg);border-color:rgba(0,230,160,0.3)">
+    <p style="font-style:italic;color:var(--fg);font-size:1.1rem;text-align:center">
+      <span class="en">"Like Visa's fraud detection - merchants integrate it, cardholders never see it"</span>
+      <span class="zh">"就像 Visa 的欺诈检测系统 —— 商家集成它，而持卡人无需感知"</span>
+    </p>
+  </div>
+  <h3 class="mt1" style="font-size:1.1rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">
+    <span class="en">Target Customers</span><span class="zh">目标客户</span>
+  </h3>
+  <div class="grid3">
+    <div class="box gap1">
+      <h3 style="color:var(--fg)">LI.FI</h3>
+      <p style="color:var(--muted);font-size:0.95rem">
+        <span class="en">Cross-chain aggregator, $600B+ volume, needs robust compliance at the entry point.</span>
+        <span class="zh">跨链聚合器，$600B+ 交易量，需要在入口处建立强大的合规屏障。</span>
+      </p>
+    </div>
+    <div class="box gap1">
+      <h3 style="color:var(--fg)"><span class="en">DeFi Protocols</span><span class="zh">DeFi 协议</span></h3>
+      <p style="color:var(--muted);font-size:0.95rem">
+        <span class="en">Aave, Morpho. They don't want hackers depositing stolen funds into their Vaults.</span>
+        <span class="zh">Aave, Morpho。他们绝不希望黑客将盗取的资金存入他们的 Vault 中。</span>
+      </p>
+    </div>
+    <div class="box gap1">
+      <h3 style="color:var(--fg)"><span class="en">Exchanges & Wallets</span><span class="zh">交易所 & 钱包</span></h3>
+      <p style="color:var(--muted);font-size:0.95rem">
+        <span class="en">Increasing regulatory pressure globally demands integrated AML solutions.</span>
+        <span class="zh">全球范围内日益增长的监管压力，要求它们必须集成 AML 解决方案。</span>
+      </p>
+    </div>
+  </div>
+  <p class="center mt1" style="color:var(--primary);font-weight:600;font-size:1.1rem">
+    <span class="en">Users are checked, not customers. Platforms are our customers.</span>
+    <span class="zh">用户是被筛查的对象。平台才是我们的客户。</span>
+  </p>
+</div>
+</div>
+
+<!-- Slide 5: How Risk Scoring Works -->
+<div class="slide">
+<div class="content gap2">
+  <h2>
+    <span class="en">Weighted <span class="accent">Risk Scoring</span> Engine</span>
+    <span class="zh">加权 <span class="accent">Risk Scoring</span> 风险评分引擎</span>
+  </h2>
+  
+  <div class="row mt1" style="justify-content:center;gap:1.5rem">
+    <div class="box center" style="padding:1rem 2rem;flex:1"><p style="font-weight:600"><span class="en">Address Submitted</span><span class="zh">提交地址 (Address Submitted)</span></p></div>
+    <div class="flow-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+    <div class="box center" style="padding:1rem 2rem;flex:1;border-color:var(--primary)"><p style="font-weight:600;color:var(--primary)"><span class="en">Risk Analysis</span><span class="zh">风险分析 (Risk Analysis)</span></p></div>
+    <div class="flow-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+    <div class="box center" style="padding:1rem 2rem;flex:1"><p style="font-weight:600"><span class="en">Decision</span><span class="zh">决策 (Decision)</span></p></div>
+  </div>
+
+  <div class="grid2 mt1">
+    <div class="box">
+      <p class="label" style="margin-bottom:1rem"><span class="en">Risk Score Formula</span><span class="zh">风险评分公式</span></p>
+      <ul class="check-list">
+        <li><span style="width:180px;display:inline-block"><span class="en">OFAC Sanctioned Entity:</span><span class="zh">OFAC 制裁实体:</span></span> <span class="danger" style="font-weight:600">+40 pts</span></li>
+        <li><span style="width:180px;display:inline-block"><span class="en">Known Hacker Address:</span><span class="zh">已知黑客地址:</span></span> <span class="danger" style="font-weight:600">+35 pts</span></li>
+        <li><span style="width:180px;display:inline-block"><span class="en">Scam-Related Address:</span><span class="zh">诈骗相关地址:</span></span> <span style="color:var(--yellow);font-weight:600">+30 pts</span></li>
+        <li><span style="width:180px;display:inline-block"><span class="en">Mixer Interaction:</span><span class="zh">混币器交互:</span></span> <span style="color:var(--yellow);font-weight:600">+25 pts</span></li>
+        <li><span style="width:180px;display:inline-block"><span class="en">Large Suspicious Amount:</span><span class="zh">大额可疑资金:</span></span> <span style="color:var(--primary);font-weight:600">+20 pts</span></li>
+      </ul>
+      <p class="mt1" style="font-size:0.85rem;color:var(--muted);border-top:1px solid var(--border);padding-top:0.8rem">
+        <span class="en">+ Behavioral analysis: frequency checks, risk drift patterns</span>
+        <span class="zh">+ 行为分析：频率检查、风险漂移模式 (Risk Drift Patterns)</span>
+      </p>
+    </div>
+    <div class="box gap2 center" style="justify-content:center">
+      <p class="label"><span class="en">Decision Thresholds</span><span class="zh">决策阈值</span></p>
+      <div style="background:var(--green-bg);padding:1rem;border-radius:8px;border:1px solid rgba(0,230,160,0.3)">
+        <span class="accent" style="font-weight:700;font-size:1.2rem"><span class="en">0-30: ALLOW</span><span class="zh">0-30: 允许 (ALLOW)</span></span>
+      </div>
+      <div style="background:var(--yellow-bg);padding:1rem;border-radius:8px;border:1px solid rgba(251,191,36,0.3)">
+        <span style="color:var(--yellow);font-weight:700;font-size:1.2rem"><span class="en">31-70: REVIEW</span><span class="zh">31-70: 审查 (REVIEW)</span></span>
+      </div>
+      <div style="background:var(--red-bg);padding:1rem;border-radius:8px;border:1px solid rgba(224,64,64,0.3)">
+        <span class="danger" style="font-weight:700;font-size:1.2rem"><span class="en">71-100: BLOCK</span><span class="zh">71-100: 拦截 (BLOCK)</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Slide 6: Demo Bad Actors -->
+<div class="slide">
+<div class="content gap2">
+  <h2>
+    <span class="en">Live Demo: <span class="danger">Catching Bad Actors</span></span>
+    <span class="zh">实机演示：<span class="danger">拦截恶意行为者</span></span>
+  </h2>
+  <div class="grid2 mt1">
+    <div class="box box-red gap1">
+      <div class="row" style="justify-content:space-between">
+        <h3><span class="en">Ronin Hacker</span><span class="zh">Ronin 黑客</span></h3>
+        <span class="badge-tag badge-tag-red">HACKER</span>
+      </div>
+      <p class="mono" style="color:var(--muted);font-size:.85rem">0x098B716B...383E2f96</p>
+      <p style="color:var(--fg);font-size:.95rem;line-height:1.6">
+        <span class="en">Lazarus Group (North Korea). Stole <span class="danger" style="font-weight:600">$625M</span> in 2022.</span>
+        <span class="zh">朝鲜 Lazarus 集团。在 2022 年窃取了 <span class="danger" style="font-weight:600">6.25亿美元</span>。这是攻击者的钱包。</span>
+      </p>
+      <div class="row mt1" style="align-items:flex-end">
+        <div>
+          <span class="big-num danger">75</span><span style="color:var(--muted);font-size:.9rem">/100</span>
+          <p class="label" style="margin-top:0.2rem"><span class="en">Real Backend Score</span><span class="zh">真实后端评分</span></p>
+        </div>
+        <span class="badge badge-block" style="margin-left:auto;font-size:0.9rem;padding:0.4rem 1rem">BLOCK</span>
+      </div>
+    </div>
+    
+    <div class="box box-red gap1">
+      <div class="row" style="justify-content:space-between">
+        <h3>Tornado Cash</h3>
+        <span class="badge-tag badge-tag-red">MIXER</span>
+      </div>
+      <p class="mono" style="color:var(--muted);font-size:.85rem">0xd90e2f92...3324F31b</p>
+      <p style="color:var(--fg);font-size:.95rem;line-height:1.6">
+        <span class="en">OFAC-sanctioned mixer. <span class="danger" style="font-weight:600">$7B+</span> illicit funds processed.</span>
+        <span class="zh">被 OFAC 制裁的混币器。已处理超过 <span class="danger" style="font-weight:600">70亿美元</span> 的非法资金。</span>
+      </p>
+      <div class="row mt1" style="align-items:flex-end">
+        <div>
+          <span class="big-num danger">100</span><span style="color:var(--muted);font-size:.9rem">/100</span>
+          <p class="label" style="margin-top:0.2rem"><span class="en">Maximum Score</span><span class="zh">最高风险分</span></p>
+        </div>
+        <span class="badge badge-block" style="margin-left:auto;font-size:0.9rem;padding:0.4rem 1rem">BLOCK</span>
+      </div>
+    </div>
+  </div>
+  <div class="box mt1 center" style="padding:1rem">
+    <p style="color:var(--muted);font-size:0.95rem">
+      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" style="vertical-align:middle;margin-right:0.3rem;margin-top:-2px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+      <span class="en">Note: Tornado Cash scores HIGHER (100) than Ronin Hacker (75) because OFAC sanctions = zero tolerance.</span>
+      <span class="zh">注：Tornado Cash 的评分 (100) 高于 Ronin 黑客 (75)，因为 OFAC 制裁意味着零容忍。</span>
+    </p>
+  </div>
+</div>
+</div>
+
+<!-- Slide 7: Demo Good Actors -->
+<div class="slide">
+<div class="content gap2">
+  <h2>
+    <span class="en">Live Demo: <span class="accent">Protecting Good Actors</span></span>
+    <span class="zh">实机演示：<span class="accent">保护合规用户</span></span>
+  </h2>
+  <div class="grid2 mt1">
+    <div class="box box-green gap1">
+      <div class="row" style="justify-content:space-between">
+        <h3>Lido stETH</h3>
+        <span class="badge-tag badge-tag-green">WHITELISTED</span>
+      </div>
+      <p class="mono" style="color:var(--muted);font-size:.85rem">0xae7ab965...12D7fE84</p>
+      <p style="color:var(--fg);font-size:.95rem;line-height:1.6">
+        <span class="en">Managing <span class="accent" style="font-weight:600">$14B+</span> staked ETH. Known safe DeFi protocol.</span>
+        <span class="zh">管理着超过 <span class="accent" style="font-weight:600">140亿美元</span> 的质押 ETH。已知的安全 DeFi 协议。</span>
+      </p>
+      <div class="row mt1" style="align-items:flex-end">
+        <div>
+          <span class="big-num accent">0</span><span style="color:var(--muted);font-size:.9rem">/100</span>
+        </div>
+        <span class="badge badge-allow" style="margin-left:auto;font-size:0.9rem;padding:0.4rem 1rem">ALLOW</span>
+      </div>
+    </div>
+    
+    <div class="box box-green gap1">
+      <div class="row" style="justify-content:space-between">
+        <h3>Uniswap V3</h3>
+        <span class="badge-tag badge-tag-green">WHITELISTED</span>
+      </div>
+      <p class="mono" style="color:var(--muted);font-size:.85rem">0x1F98431c...ea31F984</p>
+      <p style="color:var(--fg);font-size:.95rem;line-height:1.6">
+        <span class="en">Largest DEX factory contract. Zero latency pass-through.</span>
+        <span class="zh">最大的 DEX 工厂合约。白名单机制保障零延迟通行。</span>
+      </p>
+      <div class="row mt1" style="align-items:flex-end">
+        <div>
+          <span class="big-num accent">0</span><span style="color:var(--muted);font-size:.9rem">/100</span>
+        </div>
+        <span class="badge badge-allow" style="margin-left:auto;font-size:0.9rem;padding:0.4rem 1rem">ALLOW</span>
+      </div>
+    </div>
+  </div>
+  <div class="box mt1" style="background:var(--card)">
+    <p style="font-size:1rem;line-height:1.6;color:var(--fg);text-align:center">
+      <span class="en">
+        <span style="color:var(--muted)">Left panel (without protection):</span> "No AML check performed"<br>
+        <span class="accent" style="font-weight:600">Right panel (with protection):</span> "Whitelisted address"<br>
+        <span style="font-size:0.9rem;color:var(--muted);margin-top:0.5rem;display:block">Same result, but INFORMED decision vs IGNORANT pass-through.</span>
+      </span>
+      <span class="zh">
+        <span style="color:var(--muted)">左侧面板（无保护）：</span> "未执行 AML 检查"<br>
+        <span class="accent" style="font-weight:600">右侧面板（有保护）：</span> "白名单安全地址"<br>
+        <span style="font-size:0.9rem;color:var(--muted);margin-top:0.5rem;display:block">结果看似相同，但这是<span style="color:var(--primary)">明智决策 (Informed Decision)</span>与<span style="color:var(--red)">盲目放行 (Ignorant Pass-through)</span>的区别。</span>
+      </span>
+    </p>
+  </div>
+</div>
+</div>
+
+<!-- Slide 8: Demo Compare -->
+<div class="slide">
+<div class="content gap2">
+  <h2>
+    <span class="en">Compare: <span class="accent">With vs Without</span> BridgeShield</span>
+    <span class="zh">对比：<span class="accent">使用 vs 未使用</span> BridgeShield</span>
+  </h2>
+  
+  <div class="box mt1" style="padding:0;overflow:hidden">
+    <table class="table">
+      <thead>
+        <tr>
+          <th><span class="en">Entity / Address</span><span class="zh">实体 / 地址</span></th>
+          <th><span class="en">Without BridgeShield</span><span class="zh">未使用 BridgeShield</span></th>
+          <th><span class="en">With BridgeShield</span><span class="zh">使用 BridgeShield</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span style="font-weight:600"><span class="en">Ronin Hacker</span><span class="zh">Ronin 黑客</span></span><br><span class="mono" style="font-size:0.8rem;color:var(--muted)">0x098B...</span></td>
+          <td><span class="badge badge-allow" style="opacity:0.6">ALLOW (<span class="en">Score</span><span class="zh">分数</span>: 0)</span></td>
+          <td><span class="badge badge-block">BLOCK (<span class="en">Score</span><span class="zh">分数</span>: 75)</span> <span class="badge-tag badge-tag-red" style="margin-left:4px">HACKER</span></td>
+        </tr>
+        <tr>
+          <td><span style="font-weight:600">Tornado Cash</span><br><span class="mono" style="font-size:0.8rem;color:var(--muted)">0xd90e...</span></td>
+          <td><span class="badge badge-allow" style="opacity:0.6">ALLOW (<span class="en">Score</span><span class="zh">分数</span>: 0)</span></td>
+          <td><span class="badge badge-block">BLOCK (<span class="en">Score</span><span class="zh">分数</span>: 100)</span> <span class="badge-tag badge-tag-red" style="margin-left:4px">MIXER</span></td>
+        </tr>
+        <tr>
+          <td><span style="font-weight:600">Lido stETH</span><br><span class="mono" style="font-size:0.8rem;color:var(--muted)">0xae7a...</span></td>
+          <td><span class="badge badge-allow" style="opacity:0.6">ALLOW (<span class="en">Score</span><span class="zh">分数</span>: 0)</span></td>
+          <td><span class="badge badge-allow">ALLOW (<span class="en">Score</span><span class="zh">分数</span>: 0)</span> <span class="badge-tag badge-tag-green" style="margin-left:4px">WHITELIST</span></td>
+        </tr>
+        <tr>
+          <td><span style="font-weight:600">Uniswap V3</span><br><span class="mono" style="font-size:0.8rem;color:var(--muted)">0x1F98...</span></td>
+          <td><span class="badge badge-allow" style="opacity:0.6">ALLOW (<span class="en">Score</span><span class="zh">分数</span>: 0)</span></td>
+          <td><span class="badge badge-allow">ALLOW (<span class="en">Score</span><span class="zh">分数</span>: 0)</span> <span class="badge-tag badge-tag-green" style="margin-left:4px">WHITELIST</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <p class="center mt1" style="font-size:1.2rem;font-weight:600;color:var(--primary)">
+    <span class="en">"Bad actors blocked. Good actors pass freely. Not all ALLOWs are equal."</span>
+    <span class="zh">"恶意者被拦截，合规者畅通无阻。并非所有的 ALLOW 都是同等安全的。"</span>
+  </p>
+</div>
+</div>
+
+<!-- Slide 9: Earn Flow Overview -->
+<div class="slide">
+<div class="content gap2">
+  <h2>
+    <span class="en">Earn Flow: <span class="accent">AML-Gated DeFi Investment</span></span>
+    <span class="zh">Earn Flow: <span class="accent">带有 AML 网关的 DeFi 投资</span></span>
+  </h2>
+  <p class="sub">
+    <span class="en">Complete DeFi investment workflow with embedded AML compliance. <span style="font-style:italic;color:var(--fg)">"Like a bank's KYC check before opening an investment account."</span></span>
+    <span class="zh">内置 AML 合规检测的完整 DeFi 投资工作流。<span style="font-style:italic;color:var(--fg)">"就像银行在为你开设投资账户前，必须进行 KYC 审查。"</span></span>
+  </p>
+  
+  <div class="grid3 mt2">
+    <div class="box gap1">
+      <div class="row">
+        <div class="icon-box icon-box-primary" style="width:32px;height:32px;font-size:1rem;font-weight:700">1</div>
+        <h3 style="font-size:1.1rem"><span class="en">Discover Vaults</span><span class="zh">发现 Vaults</span></h3>
+      </div>
+      <p style="color:var(--muted);font-size:0.9rem">LI.FI Earn Data API</p>
+      <p style="font-size:0.95rem">
+        <span class="en">Browse available yield opportunities across chains.</span>
+        <span class="zh">浏览并发现各条链上的高收益投资机会。</span>
+      </p>
+    </div>
+    
+    <div class="box gap1" style="border-color:var(--primary);box-shadow:var(--glow)">
+      <div class="row">
+        <div class="icon-box icon-box-primary" style="width:32px;height:32px;font-size:1rem;font-weight:700">2</div>
+        <h3 style="font-size:1.1rem"><span class="en">AML Gate + Quote</span><span class="zh">AML 检查 + 报价</span></h3>
+      </div>
+      <p style="color:var(--muted);font-size:0.9rem">BridgeShield + LI.FI Composer</p>
+      <p style="font-size:0.95rem">
+        <span class="en">Check address safety, then generate transaction quote.</span>
+        <span class="zh">检查地址安全性，然后生成交易报价 (Quote)。</span>
+      </p>
+    </div>
+    
+    <div class="box gap1">
+      <div class="row">
+        <div class="icon-box icon-box-primary" style="width:32px;height:32px;font-size:1rem;font-weight:700">3</div>
+        <h3 style="font-size:1.1rem"><span class="en">Execute & Verify</span><span class="zh">执行与验证</span></h3>
+      </div>
+      <p style="color:var(--muted);font-size:0.9rem">On-chain + Portfolio API</p>
+      <p style="font-size:0.95rem">
+        <span class="en">Execute transaction and verify portfolio balance.</span>
+        <span class="zh">在链上执行交易，并验证投资组合余额。</span>
+      </p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Slide 10: Why Hackers Target DeFi Vaults -->
+<div class="slide">
+<div class="content gap2">
+  <h2>
+    <span class="en">Why Hackers Target <span class="accent">DeFi Vaults</span></span>
+    <span class="zh">为什么黑客盯上 <span class="accent">DeFi Vaults</span></span>
+  </h2>
+  
+  <div class="box box-red gap1 mt1">
+    <h3 class="danger" style="font-size:1.1rem">
+      <span class="en">The Laundering Flow (Without BridgeShield)</span>
+      <span class="zh">洗钱链路 (没有 BridgeShield 的情况)</span>
+    </h3>
+    <div class="row" style="gap:1rem;flex-wrap:wrap">
+      <span class="badge-tag badge-tag-red"><span class="en">Steals ETH/USDC</span><span class="zh">盗取 ETH/USDC</span></span>
+      <div class="flow-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+      <span class="badge-tag" style="background:var(--card);border:1px solid var(--border)"><span class="en">Deposits into Vault</span><span class="zh">存入 Vault</span></span>
+      <div class="flow-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+      <span class="badge-tag" style="background:var(--card);border:1px solid var(--border)"><span class="en">Vault acts as "legit source"</span><span class="zh">Vault 成为"合法来源"</span></span>
+      <div class="flow-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+      <span class="badge-tag badge-tag-red"><span class="en">Money Laundered</span><span class="zh">洗钱成功</span></span>
+    </div>
+  </div>
+
+  <div class="box box-green gap1 mt1">
+    <h3 class="accent" style="font-size:1.1rem">
+      <span class="en">BridgeShield Protection (Step 2 Block)</span>
+      <span class="zh">BridgeShield 保护机制 (在步骤 2 拦截)</span>
+    </h3>
+    <ul class="check-list">
+      <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--primary)" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> <span class="en"><span style="font-weight:600;color:var(--fg)">For Hackers:</span> AML check fails (Score > 70) &rarr; Deposit rejected.</span><span class="zh"><span style="font-weight:600;color:var(--fg)">对于黑客：</span> AML 检查失败（分数 > 70）&rarr; 存款被拒绝。</span></li>
+      <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--primary)" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> <span class="en"><span style="font-weight:600;color:var(--fg)">For Normal Users:</span> AML check passes (Score 0) &rarr; Earn yield normally.</span><span class="zh"><span style="font-weight:600;color:var(--fg)">对于普通用户：</span> AML 检查通过（分数 0）&rarr; 正常赚取收益。</span></li>
+    </ul>
+  </div>
+
+  <div class="box mt1" style="background:var(--card)">
+    <p class="label"><span class="en">Real Example Tested</span><span class="zh">真实的测试用例</span></p>
+    <p class="mono mt1" style="font-size:0.9rem">
+      <span class="en">0.01 USDC &rarr; Aave Vault on Base via LI.FI Diamond contract</span>
+      <span class="zh">0.01 USDC &rarr; Base 链上的 Aave Vault (通过 LI.FI Diamond 合约)</span>
+    </p>
+  </div>
+</div>
+</div>
+
+<!-- Slide 11: Live On-Chain Proof -->
+<div class="slide">
+<div class="content gap2">
+  <h2>
+    <span class="en">Real Transaction on <span class="accent" style="color:#0052FF">Base Chain</span></span>
+    <span class="zh">真实链上交易证明 (<span class="accent" style="color:#0052FF">Base Chain</span>)</span>
+  </h2>
+  <p class="sub">
+    <span class="en">Not a mockup. Real money. Real blockchain. Verifiable.</span>
+    <span class="zh">这不是设计图，而是发生在真实区块链上的真金白银交易，完全可验证。</span>
+  </p>
+  
+  <div class="grid2 mt1">
+    <div class="box gap1">
+      <h3 style="font-size:1.1rem"><span class="en">Transaction Details</span><span class="zh">交易详情</span></h3>
+      <ul class="check-list">
+        <li><span style="width:80px;display:inline-block">Tx Hash:</span> <span class="mono" style="font-size:0.8rem">0x113510bbd5aaad...</span></li>
+        <li><span style="width:80px;display:inline-block"><span class="en">Status:</span><span class="zh">状态:</span></span> <span class="accent" style="font-weight:600">Success</span></li>
+        <li><span style="width:80px;display:inline-block"><span class="en">Contract:</span><span class="zh">合约:</span></span> <span class="mono" style="font-size:0.8rem">LI.FI Diamond (0x1231...)</span></li>
+        <li><span style="width:80px;display:inline-block"><span class="en">Action:</span><span class="zh">操作:</span></span> Swap Tokens Multiple V3</li>
+        <li><span style="width:80px;display:inline-block"><span class="en">Amount:</span><span class="zh">数量:</span></span> 0.01 USDC &rarr; aBasUSDC</li>
+        <li><span style="width:80px;display:inline-block"><span class="en">Chain:</span><span class="zh">网络:</span></span> Base (Chain ID 8453)</li>
+      </ul>
+      <p class="label mt1"><span class="en">Verifiable on BaseScan</span><span class="zh">可在 BaseScan 上验证</span></p>
+    </div>
+    
+    <div class="box gap1">
+      <h3 style="font-size:1.1rem"><span class="en">Confirmed Flow</span><span class="zh">钱包确认流程</span></h3>
+      <div style="border-left:2px solid var(--primary);padding-left:1rem;margin-left:0.5rem" class="gap1">
+        <div style="position:relative">
+          <div style="position:absolute;left:-1.45rem;top:0.2rem;width:12px;height:12px;border-radius:50%;background:var(--primary)"></div>
+          <p style="font-weight:600;font-size:0.95rem"><span class="en">1. Received Test Funds</span><span class="zh">1. 接收测试代币</span></p>
+          <p style="color:var(--muted);font-size:0.85rem"><span class="en">From Base faucet</span><span class="zh">来自 Base 水龙头</span></p>
+        </div>
+        <div style="position:relative">
+          <div style="position:absolute;left:-1.45rem;top:0.2rem;width:12px;height:12px;border-radius:50%;background:var(--primary)"></div>
+          <p style="font-weight:600;font-size:0.95rem"><span class="en">2. USDC Approval</span><span class="zh">2. 授权 USDC</span></p>
+          <p style="color:var(--muted);font-size:0.85rem"><span class="en">For LiFiDiamond contract</span><span class="zh">授权给 LiFiDiamond 合约</span></p>
+        </div>
+        <div style="position:relative">
+          <div style="position:absolute;left:-1.45rem;top:0.2rem;width:12px;height:12px;border-radius:50%;background:var(--primary);box-shadow:0 0 10px var(--primary)"></div>
+          <p style="font-weight:600;font-size:0.95rem;color:var(--primary)"><span class="en">3. Vault Deposit</span><span class="zh">3. 存入 Vault</span></p>
+          <p style="color:var(--muted);font-size:0.85rem"><span class="en">Swap USDC to aBasUSDC</span><span class="zh">将 USDC 兑换为 aBasUSDC</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Slide 12: LI.FI API Integration -->
+<div class="slide">
+<div class="content gap2">
+  <h2>
+    <span class="en">Deep <span class="accent">LI.FI API</span> Integration</span>
+    <span class="zh">深度集成 <span class="accent">LI.FI API</span></span>
+  </h2>
+  
+  <div class="grid3 mt1">
+    <div class="box center gap1">
+      <p class="mono label">earn.li.fi</p>
+      <h3 style="font-size:1.1rem">Earn Data API</h3>
+      <p style="color:var(--muted);font-size:0.9rem">
+        <span class="en">Vault discovery, portfolio verification.</span>
+        <span class="zh">Vault 发现，资产组合验证。</span>
+      </p>
+    </div>
+    <div class="box center gap1">
+      <p class="mono label">li.quest</p>
+      <h3 style="font-size:1.1rem">Composer API</h3>
+      <p style="color:var(--muted);font-size:0.9rem">
+        <span class="en">Transaction quote generation, routing.</span>
+        <span class="zh">生成交易报价，路由优化。</span>
+      </p>
+    </div>
+    <div class="box center gap1" style="border-color:var(--primary)">
+      <p class="mono label accent">@bridgeshield/sdk</p>
+      <h3 style="font-size:1.1rem;color:var(--primary)">BridgeShield</h3>
+      <p style="color:var(--muted);font-size:0.9rem">
+        <span class="en">AML compliance layer in between.</span>
+        <span class="zh">位于两者之间的 AML 合规层。</span>
+      </p>
+    </div>
+  </div>
+
+  <div class="code-block mt1 en">
+<span class="cm">// 1. Discover vaults via LI.FI Earn API</span>
+<span class="kw">const</span> vaults = <span class="kw">await</span> lifi.<span class="fn">getVaults</span>({ chainId: <span class="str">8453</span> });
+
+<span class="cm">// 2. BridgeShield AML check</span>
+<span class="kw">const</span> risk = <span class="kw">await</span> shield.<span class="fn">checkAddress</span>({ address, chainId });
+<span class="kw">if</span> (risk.decision === <span class="str">'BLOCK'</span>) <span class="kw">throw new</span> <span class="fn">Error</span>(<span class="str">'Blocked'</span>);
+
+<span class="cm">// 3. Build quote via LI.FI Composer</span>
+<span class="kw">const</span> quote = <span class="kw">await</span> lifi.<span class="fn">getQuote</span>({ fromToken, toToken, amount });
+
+<span class="cm">// 4. Execute on-chain</span>
+<span class="kw">await</span> wallet.<span class="fn">sendTransaction</span>(quote.transactionRequest);</div>
+
+  <div class="code-block mt1 zh">
+<span class="cm">// 1. 通过 LI.FI Earn API 发现 Vaults</span>
+<span class="kw">const</span> vaults = <span class="kw">await</span> lifi.<span class="fn">getVaults</span>({ chainId: <span class="str">8453</span> });
+
+<span class="cm">// 2. BridgeShield AML 检查</span>
+<span class="kw">const</span> risk = <span class="kw">await</span> shield.<span class="fn">checkAddress</span>({ address, chainId });
+<span class="kw">if</span> (risk.decision === <span class="str">'BLOCK'</span>) <span class="kw">throw new</span> <span class="fn">Error</span>(<span class="str">'Blocked'</span>);
+
+<span class="cm">// 3. 通过 LI.FI Composer 生成报价</span>
+<span class="kw">const</span> quote = <span class="kw">await</span> lifi.<span class="fn">getQuote</span>({ fromToken, toToken, amount });
+
+<span class="cm">// 4. 链上执行</span>
+<span class="kw">await</span> wallet.<span class="fn">sendTransaction</span>(quote.transactionRequest);</div>
+</div>
+</div>
+
+<!-- Slide 13: SDK Integration -->
+<div class="slide">
+<div class="content gap2">
+  <h2>
+    <span class="en">Integrate in <span class="accent">3 Lines of Code</span></span>
+    <span class="zh">只需 <span class="accent">3 行代码</span>即可接入</span>
+  </h2>
+  <p class="sub">
+    <span class="en">Developers add 3 lines of code to their existing LI.FI integration. That's it.</span>
+    <span class="zh">开发者只需在现有的 LI.FI 集成代码中加入 3 行代码。就是这么简单。</span>
+  </p>
+  
+  <div class="code-block mt1 en" style="font-size:1rem;padding:2rem">
+<span class="kw">import</span> { BridgeShieldClient } <span class="kw">from</span> <span class="str">'@bridgeshield/sdk'</span>;
+
+<span class="cm">// 1. Initialize</span>
+<span class="kw">const</span> client = <span class="kw">new</span> <span class="fn">BridgeShieldClient</span>({
+  baseUrl: <span class="str">'https://api.bridgeshield.io'</span>,
+  apiKey: process.env.BRIDGESHIELD_API_KEY
+});
+
+<span class="cm">// 2. Check Risk</span>
+<span class="kw">const</span> result = <span class="kw">await</span> client.<span class="fn">checkAddress</span>({ address: <span class="str">'0x...'</span>, chainId: <span class="str">1</span> });
+
+<span class="cm">// 3. Act on Decision</span>
+<span class="kw">if</span> (result.decision === <span class="str">'BLOCK'</span>) <span class="kw">return</span> <span class="fn">abortTrade</span>();</div>
+
+  <div class="code-block mt1 zh" style="font-size:1rem;padding:2rem">
+<span class="kw">import</span> { BridgeShieldClient } <span class="kw">from</span> <span class="str">'@bridgeshield/sdk'</span>;
+
+<span class="cm">// 1. 初始化客户端</span>
+<span class="kw">const</span> client = <span class="kw">new</span> <span class="fn">BridgeShieldClient</span>({
+  baseUrl: <span class="str">'https://api.bridgeshield.io'</span>,
+  apiKey: process.env.BRIDGESHIELD_API_KEY
+});
+
+<span class="cm">// 2. 检查风险</span>
+<span class="kw">const</span> result = <span class="kw">await</span> client.<span class="fn">checkAddress</span>({ address: <span class="str">'0x...'</span>, chainId: <span class="str">1</span> });
+
+<span class="cm">// 3. 根据决策结果执行</span>
+<span class="kw">if</span> (result.decision === <span class="str">'BLOCK'</span>) <span class="kw">return</span> <span class="fn">abortTrade</span>();</div>
+
+  <div class="grid3 mt2">
+    <div class="box center"><p class="big-num accent">&lt; 100ms</p><p class="label mt1"><span class="en">Response Time</span><span class="zh">响应时间</span></p></div>
+    <div class="box center"><p class="big-num">0</p><p class="label mt1"><span class="en">Dependencies</span><span class="zh">外部依赖</span></p></div>
+    <div class="box center"><p class="big-num" style="font-size:1.5rem;line-height:1.3">ESM+CJS</p><p class="label mt1"><span class="en">Universal Support</span><span class="zh">全环境支持</span></p></div>
+  </div>
+</div>
+</div>
+
+<!-- Slide 14: Technical Architecture -->
+<div class="slide">
+<div class="content gap2">
+  <h2>
+    <span class="en">Technical <span class="accent">Architecture</span></span>
+    <span class="zh">技术 <span class="accent">架构 (Architecture)</span></span>
+  </h2>
+  
+  <div class="grid2 mt1">
+    <div class="box gap1" style="border-top:3px solid var(--primary)">
+      <div class="row">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+        <h3 style="font-size:1.2rem"><span class="en">Backend API</span><span class="zh">Backend API (后端 API)</span></h3>
+      </div>
+      <p style="color:var(--muted);font-size:0.95rem">
+        <span class="en">Node.js + Express + Prisma + Winston. Risk engine, API gateway, circuit breaker, and 76 seeded risk addresses.</span>
+        <span class="zh">Node.js + Express + Prisma + Winston。包含风险引擎、API 网关、熔断机制，数据库中预置了 76 个真实风险地址。</span>
+      </p>
+    </div>
+    
+    <div class="box gap1" style="border-top:3px solid #c084fc">
+      <div class="row">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+        <h3 style="font-size:1.2rem"><span class="en">SDK Package</span><span class="zh">SDK Package (SDK 模块)</span></h3>
+      </div>
+      <p style="color:var(--muted);font-size:0.95rem">
+        <span class="en">TypeScript, zero-dependency, ESM/CJS dual output, 5 core methods.</span>
+        <span class="zh">TypeScript 编写，零外部依赖，支持 ESM/CJS 双输出，提供 5 个核心方法。</span>
+      </p>
+    </div>
+    
+    <div class="box gap1" style="border-top:3px solid #38bdf8">
+      <div class="row">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+        <h3 style="font-size:1.2rem"><span class="en">Demo Frontend</span><span class="zh">Demo Frontend (演示前端)</span></h3>
+      </div>
+      <p style="color:var(--muted);font-size:0.95rem">
+        <span class="en">React + Vite + Framer Motion + Tailwind CSS. Check, Compare, and Earn Flow pages.</span>
+        <span class="zh">React + Vite + Framer Motion + Tailwind CSS。包含 Check、Compare 和 Earn Flow 演示页面。</span>
+      </p>
+    </div>
+    
+    <div class="box gap1" style="border-top:3px solid #fbbf24">
+      <div class="row">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <h3 style="font-size:1.2rem"><span class="en">Admin Panel</span><span class="zh">Admin Panel (管理后台)</span></h3>
+      </div>
+      <p style="color:var(--muted);font-size:0.95rem">
+        <span class="en">React + Recharts + Tailwind CSS. Operations dashboard, appeals, logs, and whitelist management.</span>
+        <span class="zh">React + Recharts + Tailwind CSS。提供运营仪表盘、申诉处理、日志查看和白名单管理功能。</span>
+      </p>
+    </div>
+  </div>
+  
+  <div class="box mt1" style="background:var(--card);border:1px dashed var(--primary)">
+    <p style="color:var(--fg);font-size:0.95rem;text-align:center">
+      <span class="en"><span class="accent" style="font-weight:600">Circuit Breaker Pattern:</span> If external APIs fail >50%, auto-degrades to safe mode to ensure LI.FI is never blocked.</span>
+      <span class="zh"><span class="accent" style="font-weight:600">熔断机制 (Circuit Breaker):</span> 如果外部 API 失败率超过 50%，系统自动降级到安全模式，确保 LI.FI 的交易永远不会因为合规层宕机而受阻。</span>
+    </p>
+  </div>
+</div>
+</div>
+
+<!-- Slide 15: Why LI.FI Needs BridgeShield -->
+<div class="slide">
+<div class="content gap2">
+  <h2>
+    <span class="en">Why LI.FI Needs <span class="accent">BridgeShield</span></span>
+    <span class="zh">为什么 LI.FI 需要 <span class="accent">BridgeShield</span></span>
+  </h2>
+  
+  <div class="gap1 mt1">
+    <div class="box">
+      <p style="font-weight:600;color:var(--fg);margin-bottom:0.5rem">
+        <span class="en">Q: Hackers can use other protocols, why protect LI.FI?</span>
+        <span class="zh">Q: 黑客可以使用其他协议洗钱，为什么非要保护 LI.FI？</span>
+      </p>
+      <p style="color:var(--muted);font-size:0.95rem;line-height:1.6">
+        <span class="en">A: LI.FI aggregates 30+ bridges across 30+ chains, processing $600B+. It's the most convenient cross-chain entry. Banks can't skip KYC just because cash exists.</span>
+        <span class="zh">A: LI.FI 聚合了 30 多条链上的 30 多个跨链桥，处理资金达 6000 亿美元。它是最便捷的跨链入口。这就好比银行不能因为存在现金交易，就免除 KYC 审查一样。</span>
+      </p>
+    </div>
+    
+    <div class="box">
+      <p style="font-weight:600;color:var(--fg);margin-bottom:0.5rem">
+        <span class="en">Q: Will it slow down transactions?</span>
+        <span class="zh">Q: 这会拖慢用户的交易速度吗？</span>
+      </p>
+      <p style="color:var(--muted);font-size:0.95rem;line-height:1.6">
+        <span class="en">A: <span class="accent" style="font-weight:600">&lt; 100ms response.</span> Circuit breaker ensures LI.FI is never blocked even if BridgeShield goes down.</span>
+        <span class="zh">A: <span class="accent" style="font-weight:600">响应时间小于 100ms。</span> 并且熔断机制确保即使 BridgeShield 出现故障，LI.FI 的正常交易也不会受到任何阻碍。</span>
+      </p>
+    </div>
+    
+    <div class="box">
+      <p style="font-weight:600;color:var(--fg);margin-bottom:0.5rem">
+        <span class="en">Q: Isn't bridge security enough?</span>
+        <span class="zh">Q: 跨链桥本身的安全机制难道不够吗？</span>
+      </p>
+      <p style="color:var(--muted);font-size:0.95rem;line-height:1.6">
+        <span class="en">A: Hyperbridge claimed 'full node security' - yet was exploited yesterday (April 13, 2026). Security cannot rely on bridges alone.</span>
+        <span class="zh">A: Hyperbridge 曾声称拥有"全节点级安全" —— 但在昨天（2026年4月13日）依然被攻破。安全防线不能仅仅依赖于跨链桥本身。</span>
+      </p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Slide 16: Production Readiness -->
+<div class="slide">
+<div class="content gap2">
+  <h2>
+    <span class="en">Open Source and <span class="accent">Production Ready</span></span>
+    <span class="zh">开源状态与 <span class="accent">生产就绪度</span></span>
+  </h2>
+  <p class="sub">
+    <span class="en">The team repo already ships more than a demo: API, SDK, demo frontend, admin panel, Docker workflow, and automated tests.</span>
+    <span class="zh">团队仓库里已经不只是一个 Demo，而是一套包含 API、SDK、演示前端、管理后台、Docker 工作流和自动化测试的完整工程。</span>
+  </p>
+
+  <div class="grid4 mt1">
+    <div class="box center">
+      <p class="big-num accent">MIT</p>
+      <p class="label mt1"><span class="en">License</span><span class="zh">开源协议</span></p>
+    </div>
+    <div class="box center">
+      <p class="big-num">197</p>
+      <p class="label mt1"><span class="en">Automated Tests</span><span class="zh">自动化测试</span></p>
+      <p style="color:var(--muted);font-size:0.82rem;margin-top:.5rem">138 + 21 + 38</p>
+    </div>
+    <div class="box center">
+      <p class="big-num" style="font-size:1.5rem;line-height:1.3">Docker</p>
+      <p class="label mt1"><span class="en">Compose Ready</span><span class="zh">一键部署</span></p>
+    </div>
+    <div class="box center">
+      <p class="big-num" style="font-size:1.45rem;line-height:1.3">CI/CD</p>
+      <p class="label mt1"><span class="en">GitHub Actions</span><span class="zh">持续交付</span></p>
+    </div>
+  </div>
+
+  <div class="grid2 mt1">
+    <div class="box gap1">
+      <h3><span class="en">What Ships Today</span><span class="zh">今天已经具备的能力</span></h3>
+      <ul class="check-list">
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--primary)" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> <span class="en">Frontend Demo on `:5173` and Admin Panel on `:5174`</span><span class="zh">演示前端运行在 `:5173`，管理后台运行在 `:5174`</span></li>
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--primary)" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> <span class="en">Backend API with AML, appeals, whitelist, analytics, earn, and composer routes</span><span class="zh">后端 API 已覆盖 AML、申诉、白名单、分析、Earn 和 Composer 路由</span></li>
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--primary)" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> <span class="en">Official `@bridgeshield/sdk` package for integrators</span><span class="zh">提供面向集成方的官方 `@bridgeshield/sdk` 包</span></li>
+      </ul>
+    </div>
+    <div class="box gap1">
+      <h3><span class="en">Delivery Signals</span><span class="zh">工程交付信号</span></h3>
+      <ul class="check-list">
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--primary)" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> <span class="en">`docker-compose up -d` boots the full stack</span><span class="zh">通过 `docker-compose up -d` 即可拉起完整服务栈</span></li>
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--primary)" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> <span class="en">SQLite for dev, PostgreSQL for production, Redis-ready cache strategy</span><span class="zh">开发环境使用 SQLite，生产环境使用 PostgreSQL，并预留 Redis 缓存策略</span></li>
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--primary)" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> <span class="en">Winston logs, health checks, and GitHub Actions CI</span><span class="zh">具备 Winston 日志、健康检查和 GitHub Actions 持续集成</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Slide 17: Security and Roadmap -->
+<div class="slide">
+<div class="content gap2">
+  <h2>
+    <span class="en">Security, Intelligence, and <span class="accent">Roadmap</span></span>
+    <span class="zh">安全、情报与 <span class="accent">路线图</span></span>
+  </h2>
+
+  <div class="grid3 mt1">
+    <div class="box gap1">
+      <h3><span class="en">Security Controls</span><span class="zh">安全控制</span></h3>
+      <ul class="check-list">
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--primary)" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> API Key authentication</li>
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--primary)" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> JWT admin sessions</li>
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--primary)" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> Rate limiting + input validation</li>
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--primary)" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> Helmet + CORS hardening</li>
+      </ul>
+    </div>
+    <div class="box gap1">
+      <h3><span class="en">Behavior Intelligence</span><span class="zh">行为情报</span></h3>
+      <ul class="check-list">
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--yellow)" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> <span class="en">LI.FI analytics history + local check logs</span><span class="zh">结合 LI.FI 分析历史与本地检查日志</span></li>
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--yellow)" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> <span class="en">Detect chain-hopping, amount spikes, and decision drift</span><span class="zh">识别跨链跳转、金额激增和决策漂移</span></li>
+        <li><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--yellow)" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> <span class="en">Raise confidence when both local and LI.FI signals agree</span><span class="zh">当本地与 LI.FI 信号一致时，提高风险判断置信度</span></li>
+      </ul>
+    </div>
+    <div class="box gap1">
+      <h3><span class="en">Roadmap</span><span class="zh">路线图</span></h3>
+      <div style="display:flex;flex-direction:column;gap:.9rem">
+        <div>
+          <span class="badge-tag badge-tag-green"><span class="en">Done</span><span class="zh">已完成</span></span>
+          <p style="margin-top:.4rem;color:var(--muted)"><span class="en">MVP core: check API, whitelist, appeal flow, Docker deployment, test foundation.</span><span class="zh">MVP 核心：检查 API、白名单、申诉流程、Docker 部署、测试基础。</span></p>
+        </div>
+        <div>
+          <span class="badge-tag badge-tag-yellow"><span class="en">In Progress</span><span class="zh">进行中</span></span>
+          <p style="margin-top:.4rem;color:var(--muted)"><span class="en">Production hardening: admin dashboard, enhanced scoring, SDK polish, PostgreSQL HA.</span><span class="zh">生产强化：管理后台、增强评分、SDK 打磨、PostgreSQL 高可用。</span></p>
+        </div>
+        <div>
+          <span class="badge-tag badge-tag-red"><span class="en">Next</span><span class="zh">下一步</span></span>
+          <p style="margin-top:.4rem;color:var(--muted)"><span class="en">Ecosystem integration, richer cross-chain data, enterprise tiers, real-time monitoring.</span><span class="zh">生态集成、更丰富的跨链数据、企业套餐与实时监控。</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="box mt1" style="background:var(--card);border:1px dashed var(--primary)">
+    <p style="color:var(--fg);font-size:0.95rem;text-align:center">
+      <span class="en"><span class="accent" style="font-weight:600">Key Merge Insight:</span> the repo PPT adds delivery credibility, while this deck preserves the stronger hackathon story and demo flow.</span>
+      <span class="zh"><span class="accent" style="font-weight:600">合并价值：</span>仓库版 PPT 强在工程交付背书，而当前这版更强在故事线和 Demo 说服力，两者结合后更适合正式路演。</span>
+    </p>
+  </div>
+</div>
+</div>
+
+<!-- Slide 18: Team -->
+<div class="slide">
+<div class="content gap2">
+  <h2 style="justify-content:center">
+    <span class="en">Core <span class="accent">Team</span></span>
+    <span class="zh">核心<span class="accent">团队</span></span>
+  </h2>
+  <p class="sub center">
+    <span class="en">A multidisciplinary team spanning product, frontend, backend, AI, testing, and DevOps.</span>
+    <span class="zh">一支覆盖产品、前端、后端、AI、测试和 DevOps 的多学科团队。</span>
+  </p>
+
+  <div class="team-row">
+    <div class="team-card">
+      <div class="team-avatar" style="background-image:url('https://duk.tw/exYFkP.jpg')"></div>
+      <h3>Alice</h3>
+      <p style="color:var(--muted);font-size:0.95rem">
+        <span class="en">Project Lead<br>Product Design</span>
+        <span class="zh">项目负责人<br>产品设计</span>
+      </p>
+    </div>
+    <div class="team-card">
+      <div class="team-avatar" style="background-image:url('https://duk.tw/1TRNhx.jpg')"></div>
+      <h3>Jack</h3>
+      <p style="color:var(--muted);font-size:0.95rem">
+        <span class="en">Frontend Engineer<br>UI Design</span>
+        <span class="zh">前端工程师<br>界面设计</span>
+      </p>
+    </div>
+    <div class="team-card">
+      <div class="team-avatar" style="background-image:url('https://duk.tw/uha9iW.jpg')"></div>
+      <h3>Taylor</h3>
+      <p style="color:var(--muted);font-size:0.95rem">
+        <span class="en">AI Engineer<br>Backend Engineer</span>
+        <span class="zh">AI 工程师<br>后端工程师</span>
+      </p>
+    </div>
+    <div class="team-card">
+      <div class="team-avatar" style="background-image:url('https://duk.tw/Ni8GQw.jpg')"></div>
+      <h3>Quentin</h3>
+      <p style="color:var(--muted);font-size:0.95rem">
+        <span class="en">Testing Engineer<br>DevOps Engineer</span>
+        <span class="zh">测试工程师<br>DevOps 工程师</span>
+      </p>
+    </div>
+  </div>
+
+  <div class="box mt1" style="background:var(--card)">
+    <p style="color:var(--fg);font-size:1rem;text-align:center">
+      <span class="en">BridgeShield combines security thinking with product delivery to make cross-chain compliance practical.</span>
+      <span class="zh">BridgeShield 团队把安全思维和产品交付结合起来，让跨链合规真正具备落地性。</span>
+    </p>
+  </div>
+</div>
+</div>
+
+<!-- Slide 19: Thank You -->
+<div class="slide">
+<div class="content center gap2 thanks-slide">
+  <div class="thanks-title">
+    <span class="thanks-title-bar" aria-hidden="true"></span>
+    <h2 class="thanks-title-text" style="margin-bottom:0">
+      <span class="en">Thank You</span><span class="zh">Thank You</span>
+    </h2>
+  </div>
+  <p class="thanks-sub">
+    <span class="en">BridgeShield - Security at the Entry Point</span>
+    <span class="zh">BridgeShield - 入口即安全</span>
+  </p>
+  <div class="thanks-tags">
+    <span class="thanks-tag thanks-tag-green"><span class="en">3 Lines SDK</span><span class="zh">3行代码集成</span></span>
+    <span class="thanks-tag thanks-tag-green">&lt;100ms</span>
+    <span class="thanks-tag thanks-tag-yellow"><span class="en">LI.FI Native</span><span class="zh">LI.FI 原生</span></span>
+    <span class="thanks-tag thanks-tag-purple">Open Source</span>
+  </div>
+  <div class="thanks-actions">
+    <a href="https://github.com/easyshellworld/bridgeshield" class="thanks-btn thanks-btn-primary" target="_blank" rel="noopener noreferrer">
+      <span class="en">GitHub</span><span class="zh">GitHub</span>
+    </a>
+    <a href="https://bridgeshield-demo.netlify.app" class="thanks-btn thanks-btn-outline" target="_blank" rel="noopener noreferrer">
+      <span class="en">Live Demo</span><span class="zh">Live Demo</span>
+    </a>
+  </div>
+</div>
+</div>
+
+</div>
+
+<!-- Navigation Bar -->
+<div class="nav">
+  <div class="nav-btns">
+    <button class="nav-btn" id="prev-btn" aria-label="Previous Slide">
+      <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+    </button>
+    <button class="nav-btn" id="next-btn" aria-label="Next Slide">
+      <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+    </button>
+  </div>
+  <button class="lang-btn" id="lang-toggle" aria-label="Toggle Language">
+    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+    <span>中 / EN</span>
+  </button>
+  <div class="page-num" id="slide-counter">1 / 19</div>
+</div>
 
 <script>
-    (function() {
-        const slides = document.querySelectorAll('.slide');
-        const prevBtn = document.getElementById('prev-btn');
-        const nextBtn = document.getElementById('next-btn');
-        const counter = document.getElementById('slide-counter');
-        let current = 0;
-        const total = slides.length;
+  const slides = document.querySelectorAll('.slide');
+  let currentSlide = 0;
 
-        function showSlide(idx) {
-            slides.forEach((s, i) => s.classList.toggle('active', i === idx));
-            const content = slides[idx].querySelector('.slide-content');
-            if (content) {
-                content.classList.remove('fade-in');
-                void content.offsetWidth;
-                content.classList.add('fade-in');
-            }
-            counter.textContent = `${idx + 1} / ${total}`;
-            window.scrollTo(0, 0);
-        }
+  function updateSlides() {
+    slides.forEach((slide, index) => {
+      if (index === currentSlide) {
+        slide.classList.add('active');
+      } else {
+        slide.classList.remove('active');
+      }
+    });
+    document.getElementById('slide-counter').textContent = `${currentSlide + 1} / ${slides.length}`;
+    document.getElementById('prev-btn').disabled = currentSlide === 0;
+    document.getElementById('next-btn').disabled = currentSlide === slides.length - 1;
+  }
 
-        function next() { if (current < total - 1) showSlide(++current); }
-        function prev() { if (current > 0) showSlide(--current); }
+  function nextSlide() {
+    if (currentSlide < slides.length - 1) {
+      currentSlide++;
+      updateSlides();
+    }
+  }
 
-        window._nextSlide = next;
+  function prevSlide() {
+    if (currentSlide > 0) {
+      currentSlide--;
+      updateSlides();
+    }
+  }
 
-        nextBtn.addEventListener('click', next);
-        prevBtn.addEventListener('click', prev);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+      e.preventDefault();
+      nextSlide();
+    }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault();
+      prevSlide();
+    }
+    if (e.key === 'Home') {
+      e.preventDefault();
+      currentSlide = 0;
+      updateSlides();
+    }
+    if (e.key === 'End') {
+      e.preventDefault();
+      currentSlide = slides.length - 1;
+      updateSlides();
+    }
+  });
 
-        window.addEventListener('keydown', e => {
-            if (e.key === 'ArrowRight') next();
-            if (e.key === 'ArrowLeft') prev();
-        });
+  document.getElementById('prev-btn').addEventListener('click', prevSlide);
+  document.getElementById('next-btn').addEventListener('click', nextSlide);
 
-        let touchX = 0;
-        document.addEventListener('touchstart', e => { touchX = e.changedTouches[0].screenX; });
-        document.addEventListener('touchend', e => {
-            const d = e.changedTouches[0].screenX - touchX;
-            if (Math.abs(d) > 50) d > 0 ? prev() : next();
-        });
+  // Language Toggle Logic
+  const langToggleBtn = document.getElementById('lang-toggle');
+  const langTextSpan = langToggleBtn.querySelector('span');
+  
+  langToggleBtn.addEventListener('click', () => {
+    const isZh = document.body.classList.contains('lang-zh');
+    if (isZh) {
+      document.body.classList.remove('lang-zh');
+      document.body.classList.add('lang-en');
+      langTextSpan.textContent = 'EN / 中';
+      document.documentElement.lang = 'en';
+    } else {
+      document.body.classList.remove('lang-en');
+      document.body.classList.add('lang-zh');
+      langTextSpan.textContent = '中 / EN';
+      document.documentElement.lang = 'zh-CN';
+    }
+  });
 
-        showSlide(0);
-    })();
+  updateSlides();
 </script>
-
 </body>
 </html>
