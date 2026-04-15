@@ -11,8 +11,10 @@ COPY prisma ./prisma/
 # 安装所有依赖（包括 dev 依赖，用于构建）
 RUN npm ci
 
-# 复制源代码
-COPY . .
+# 复制源代码和数据
+COPY src ./src
+COPY data ./data
+COPY tsconfig.json ./
 
 # 生成 Prisma 客户端
 RUN npx prisma generate
@@ -21,6 +23,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # 创建初始数据库并运行种子（在构建阶段）
+ENV DATABASE_URL="file:/app/data/dev.db"
 RUN mkdir -p /app/data && npx prisma db push --accept-data-loss && npx prisma db seed
 
 # 生产阶段
@@ -30,20 +33,19 @@ WORKDIR /app
 # 安装 OpenSSL 库（Prisma 需要）
 RUN apk add --no-cache openssl
 
-# 安装生产依赖（包括 @prisma/client）
+# 只复制 package.json 用于生产依赖安装
 COPY package*.json ./
-RUN npm ci --only=production
+
+# 安装生产依赖
+RUN npm ci --omit=dev
 
 # 从构建阶段复制必要的文件
-# 1. 复制构建的应用程序
 COPY --from=builder /app/dist ./dist
-# 2. 复制 Prisma schema 文件
 COPY --from=builder /app/prisma ./prisma
-# 3. 在生产阶段重新生成 Prisma 客户端，确保正确的平台和路径
-RUN npx prisma generate
+COPY --from=builder /app/data ./data
 
-# 创建数据目录用于 SQLite 数据库
-RUN mkdir -p /app/data
+# 在生产阶段重新生成 Prisma 客户端，确保正确的平台和路径
+RUN npx prisma generate
 
 # 设置环境变量
 ENV NODE_ENV=production
