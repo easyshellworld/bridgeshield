@@ -5,4 +5,4 @@
 # SPA Routing: All other requests serve index.html
 # NOTE: Netlify automatically serves existing static files (js/css/svg etc.)
 # before applying redirect rules, so no explicit asset rules are needed.
-#/*      /index.html   200
+/*      /index.html   200
