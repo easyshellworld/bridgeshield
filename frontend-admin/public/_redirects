@@ -2,5 +2,12 @@
 # API Proxy: All /api/* requests go to backend server
 /api/*  https://bridgeshield.x404.online/api/:splat  200
 
+# Static assets - serve actual files
+/assets/*  /assets/:splat  200
+/*.js      /:splat         200
+/*.css     /:splat         200
+/*.svg     /:splat         200
+/*.ico     /:splat         200
+
 # SPA Routing: All other requests serve index.html
 /*      /index.html   200
