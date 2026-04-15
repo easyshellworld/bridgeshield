@@ -1,4 +1,4 @@
-# BridgeShield Demo - Netlify Redirects Configuration
+# BridgeShield Admin - Netlify Redirects Configuration
 # API Proxy: All /api/* requests go to backend server
 /api/*  https://bridgeshield.x404.online/api/:splat  200
 

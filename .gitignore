@@ -33,3 +33,9 @@ frontend-admin/dist/
 docs/roadmap-priority.md
 
 docs/core_business_audit_report.md
+
+# 部署相关文档（临时文件）
+DEPLOY_DOKPLOY.md
+DOCKER_ENV_GUIDE.md
+check-env-config.sh
+verify-netlify-config.sh
